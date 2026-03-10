@@ -24,6 +24,9 @@
 ## Phase 2.5 â€” Macro Data Ingestion
 
 - [x] Create FRED client
+- [x] Separate daily FRED scheduler and series/date-based storage updates
+- [x] Expand FRED coverage for core macro indicator series
+- [x] Separate daily FRED scheduler and series/date-based storage updates
 
 ## Phase 3 — Event Extraction
 

@@ -45,6 +45,21 @@ model MacroObservation {
   @@unique([seriesId, observationDate])
 }
 
+model MacroObservationCatalog {
+  seriesId String @id
+
+  category String
+  shortDescription String
+  longDescription String?
+  frequency String?
+  units String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("MacroObservationCatalog")
+}
+
 enum ProcessingStatus {
   PENDING
   PROCESSING

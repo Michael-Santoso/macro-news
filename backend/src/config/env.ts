@@ -22,4 +22,7 @@ export const env = {
   newsIngestionIntervalMs: Number(
     process.env.NEWS_INGESTION_INTERVAL_MS ?? 15 * 60 * 1000,
   ),
+  fredIngestionIntervalMs: Number(
+    process.env.FRED_INGESTION_INTERVAL_MS ?? 24 * 60 * 60 * 1000,
+  ),
 };

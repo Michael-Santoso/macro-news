@@ -25,8 +25,9 @@ function normalizeSnapshots(snapshots: FredSeriesSnapshot[]): StoredObservation[
   return snapshots.flatMap((snapshot) =>
     snapshot.observations.flatMap((observation) => {
       const observationDate = toObservationDate(observation.date);
+      const value = observation.value.trim();
 
-      if (!observationDate) {
+      if (!observationDate || !value || value === ".") {
         return [];
       }
 
@@ -34,7 +35,7 @@ function normalizeSnapshots(snapshots: FredSeriesSnapshot[]): StoredObservation[
         {
           seriesId: snapshot.seriesId,
           observationDate,
-          value: observation.value,
+          value,
         },
       ];
     }),
@@ -83,14 +84,43 @@ export async function storeFredSeriesSnapshots(
 async function createMacroObservation(
   snapshot: StoredObservation,
 ): Promise<CreatedMacroObservation | null> {
-  const insertedRows = await prisma.$queryRaw<CreatedMacroObservation[]>(
+  const existingRows = await prisma.$queryRaw<CreatedMacroObservation[]>(
     Prisma.sql`
-      INSERT INTO "MacroObservation" ("id", "seriesId", "observationDate", "value", "createdAt", "updatedAt")
-      VALUES (${crypto.randomUUID()}, ${snapshot.seriesId}, ${snapshot.observationDate}, ${snapshot.value}, NOW(), NOW())
-      ON CONFLICT ("seriesId", "observationDate") DO NOTHING
+      SELECT "id", "seriesId", "observationDate", "value"
+      FROM "MacroObservation"
+      WHERE "seriesId" = ${snapshot.seriesId}
+        AND "observationDate" = ${snapshot.observationDate}
+      LIMIT 1
+    `,
+  );
+
+  const existingRow = existingRows[0];
+
+  if (!existingRow) {
+    const insertedRows = await prisma.$queryRaw<CreatedMacroObservation[]>(
+      Prisma.sql`
+        INSERT INTO "MacroObservation" ("id", "seriesId", "observationDate", "value", "createdAt", "updatedAt")
+        VALUES (${crypto.randomUUID()}, ${snapshot.seriesId}, ${snapshot.observationDate}, ${snapshot.value}, NOW(), NOW())
+        RETURNING "id", "seriesId", "observationDate", "value"
+      `,
+    );
+
+    return insertedRows[0] ?? null;
+  }
+
+  if (existingRow.value === snapshot.value) {
+    return null;
+  }
+
+  const updatedRows = await prisma.$queryRaw<CreatedMacroObservation[]>(
+    Prisma.sql`
+      UPDATE "MacroObservation"
+      SET "value" = ${snapshot.value},
+          "updatedAt" = NOW()
+      WHERE "id" = ${existingRow.id}
       RETURNING "id", "seriesId", "observationDate", "value"
     `,
   );
 
-  return insertedRows[0] ?? null;
+  return updatedRows[0] ?? null;
 }
