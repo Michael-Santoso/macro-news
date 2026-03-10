@@ -16,6 +16,9 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL as string,
   newsApiKey: process.env.NEWS_API_KEY,
   fredApiKey: process.env.FRED_API_KEY,
+  cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+  cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN,
+  cloudflareQueueId: process.env.CLOUDFLARE_QUEUE_ID,
   newsIngestionIntervalMs: Number(
     process.env.NEWS_INGESTION_INTERVAL_MS ?? 15 * 60 * 1000,
   ),
