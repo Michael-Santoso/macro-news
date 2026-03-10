@@ -8,17 +8,22 @@
 - [x] Connect PostgreSQL database
 - [x] Add environment variables
 - [x] Create backend scaffold (routes, services, scheduler, jobs)
-- [ ] Test backend can connect to DB (run after installing dependencies)
+- [x] Test backend can connect to DB (run after installing dependencies)
 
 ## Phase 2 — News Ingestion
 
 - [x] Create NewsAPI fetcher
-- [ ] Create RSS fetcher
+- [x] Create GDELT fetcher
+- [x] Create RSS fetcher
 - [x] Normalize article format
 - [x] Store raw articles in database
-- [ ] Add deduplication by URL
+- [x] Add deduplication by URL
 - [x] Create ingestion job
-- [ ] Add scheduler
+- [x] Add scheduler
+
+## Phase 2.5 â€” Macro Data Ingestion
+
+- [x] Create FRED client
 
 ## Phase 3 — Event Extraction
 

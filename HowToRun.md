@@ -1,6 +1,36 @@
 # Simple Guide To Run
 
-## 1) Start Database
+# Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Frontend runs at:
+
+```bash
+http://localhost:3001
+```
+
+# Backend
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+npx prisma migrate dev
+npm run dev
+```
+
+Backend runs at:
+
+```bash
+http://localhost:3000
+```
+
+# Database
 
 Open Docker Desktop first, then run:
 
@@ -14,36 +44,20 @@ PostgreSQL runs at:
 localhost:5433
 ```
 
-## 2) Run Backend
+# (Optional) Database UI
 
 ```bash
 cd backend
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run dev
+npx prisma studio
 ```
 
-Backend runs at:
-
-```bash
-http://localhost:3000
-```
-
-## 3) Optional: Prisma Studio
-
-```bash
-cd backend
-npm run prisma:studio
-```
-
-Prisma Studio runs at:
+### Database UI runs at:
 
 ```bash
 http://localhost:5555
 ```
 
-## 4) Optional: Run NewsAPI Ingestion
+# (Optional) Run NewsAPI Ingestion
 
 Set your key first:
 
@@ -57,18 +71,4 @@ Then run:
 ```bash
 cd backend
 npm run ingest:newsapi
-```
-
-## 5) Run Frontend (Next.js)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs at:
-
-```bash
-http://localhost:3001
 ```
