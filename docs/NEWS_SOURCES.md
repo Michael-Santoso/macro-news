@@ -10,7 +10,7 @@ Agents should build ingestion modules for these sources.
 
 ## NewsAPI
 
-Website
+Website:
 https://newsapi.org
 
 Capabilities:
@@ -21,18 +21,18 @@ Capabilities:
 
 Example queries:
 
-inflation
-federal reserve
-china economy
-oil prices
+- inflation
+- federal reserve
+- china economy
+- oil prices
 
 Free tier:
 
-100 requests per day.
+- 100 requests per day
 
 Example endpoint:
 
-```
+```text
 GET https://newsapi.org/v2/everything?q=inflation&apiKey=API_KEY
 ```
 
@@ -40,7 +40,7 @@ GET https://newsapi.org/v2/everything?q=inflation&apiKey=API_KEY
 
 ## GDELT Project
 
-Website
+Website:
 https://www.gdeltproject.org/
 
 Capabilities:
@@ -57,20 +57,16 @@ Coverage:
 
 Why useful:
 
-GDELT already detects events such as:
-
-sanctions
-trade wars
-conflicts
-economic shocks
-
-This reduces the need for custom classifiers.
+- sanctions
+- trade wars
+- conflicts
+- economic shocks
 
 ---
 
 ## Alpha Vantage News API
 
-Website
+Website:
 https://www.alphavantage.co/
 
 Capabilities:
@@ -81,7 +77,7 @@ Capabilities:
 
 Example query:
 
-```
+```text
 function=NEWS_SENTIMENT
 tickers=SPY,TSLA
 topics=financial_markets
@@ -89,13 +85,13 @@ topics=financial_markets
 
 Free tier:
 
-25 requests/day.
+- 25 requests per day
 
 ---
 
 ## MarketAux API
 
-Website
+Website:
 https://www.marketaux.com/
 
 Capabilities:
@@ -106,7 +102,7 @@ Capabilities:
 
 Free tier:
 
-100 requests/day.
+- 100 requests per day
 
 ---
 
@@ -116,17 +112,15 @@ RSS feeds are often the simplest ingestion method.
 
 Recommended feeds:
 
-Reuters
-Financial Times
-CNBC
+- Reuters
+- Financial Times
+- CNBC
 
 Advantages:
 
 - completely free
-- real-time updates
+- near real-time updates
 - no rate limits
-
-RSS parsing should be supported in ingestion modules.
 
 ---
 
@@ -134,30 +128,45 @@ RSS parsing should be supported in ingestion modules.
 
 These APIs provide macro indicators used to contextualize news.
 
----
-
 ## FRED API
 
-Federal Reserve Economic Data
-
+Federal Reserve Economic Data:
 https://fred.stlouisfed.org/
 
 Provides:
 
-GDP
-inflation
-interest rates
-unemployment
-yield curves
+- GDP
+- inflation
+- interest rates
+- unemployment
+- yield curves
 
 Example series:
 
-CPIAUCSL
-FEDFUNDS
-DGS10
-UNRATE
+- CPIAUCSL
+- FEDFUNDS
+- DGS10
+- UNRATE
 
 Free for research.
+
+---
+
+## Federal Reserve Primary Sources
+
+Official Federal Reserve sources used for central-bank document ingestion.
+
+Current coverage:
+
+- Chair speeches via the official Fed RSS feed
+- FOMC meeting minutes from the FOMC calendars page
+- FOMC projections materials from the FOMC calendars page
+
+Notes:
+
+- These are primary-source documents rather than market-news articles.
+- Content is stored in `CentralBankDocument`.
+- Deduplication is based on `externalKey`, typically the canonical document URL.
 
 ---
 
@@ -167,9 +176,9 @@ https://tradingeconomics.com/
 
 Provides:
 
-economic calendar
-country indicators
-commodity prices
+- economic calendar
+- country indicators
+- commodity prices
 
 ---
 
@@ -179,10 +188,10 @@ https://data.worldbank.org/
 
 Provides:
 
-GDP
-inflation
-population
-trade
+- GDP
+- inflation
+- population
+- trade
 
 Completely free.
 
@@ -194,9 +203,9 @@ https://data.oecd.org/
 
 Provides:
 
-macro indicators
-labour market data
-economic outlook
+- macro indicators
+- labour market data
+- economic outlook
 
 ---
 
@@ -204,8 +213,8 @@ economic outlook
 
 For initial implementation prioritize:
 
-1 NewsAPI
-2 RSS feeds
-3 GDELT
+1. NewsAPI
+2. RSS feeds
+3. GDELT
 
-Macro APIs can be added later.
+Macro APIs and central-bank sources can be expanded later.

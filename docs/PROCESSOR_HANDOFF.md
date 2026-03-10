@@ -43,24 +43,14 @@ Current message shapes:
 }
 ```
 
-Example:
-
 ```json
 {
-  "jobType": "process_raw_article",
-  "rawArticleId": "cmmkqevqx000810o7y2g3p40g",
-  "publishedAt": "2026-03-09T14:52:00.000Z",
-  "fetchedAt": "2026-03-10T14:55:09.370Z"
-}
-```
-
-```json
-{
-  "jobType": "process_macro_observation",
-  "macroObservationId": "cmmdemo1234567890macro01",
-  "seriesId": "CPIAUCSL",
-  "observationDate": "2026-02-01T00:00:00.000Z",
-  "value": "319.082"
+  "jobType": "process_central_bank_document",
+  "centralBankDocumentId": "<central_bank_document_id>",
+  "institution": "FEDERAL_RESERVE",
+  "documentType": "FOMC_MINUTES",
+  "publishedAt": "<iso_timestamp>",
+  "url": "<official_document_url_or_null>"
 }
 ```
 
@@ -68,11 +58,12 @@ Example:
 
 1. Read queue message.
 2. Inspect `jobType`.
-3. For `process_raw_article`, use `rawArticleId` to fetch the article from `RawArticle` in Supabase.
-4. For `process_macro_observation`, use `macroObservationId` to fetch the observation from `MacroObservation` in Supabase.
-5. Run downstream analysis.
-6. Write extracted output back to Supabase.
-7. Update status fields where applicable.
+3. For `process_raw_article`, use `rawArticleId` to fetch the article from `RawArticle`.
+4. For `process_macro_observation`, use `macroObservationId` to fetch the observation from `MacroObservation`.
+5. For `process_central_bank_document`, use `centralBankDocumentId` to fetch the document from `CentralBankDocument`.
+6. Run downstream analysis.
+7. Write extracted output back to Supabase.
+8. Update status fields where applicable.
 
 ## RawArticle Fields
 
@@ -97,3 +88,22 @@ Main fields:
 - `seriesId`
 - `observationDate`
 - `value`
+
+## CentralBankDocument Fields
+
+Main fields:
+
+- `id`
+- `institution`
+- `documentType`
+- `externalKey`
+- `title`
+- `url`
+- `pdfUrl`
+- `speaker`
+- `publishedAt`
+- `meetingDate`
+- `description`
+- `content`
+- `contentHash`
+- `processingStatus`

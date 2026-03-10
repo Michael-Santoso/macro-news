@@ -11,6 +11,16 @@ type QueueJobPayload = {
   seriesId: string;
   observationDate: string;
   value: string;
+} | {
+  jobType: "process_central_bank_document";
+  centralBankDocumentId: string;
+  institution: "FEDERAL_RESERVE";
+  documentType:
+    | "FOMC_MINUTES"
+    | "FOMC_PROJECTIONS"
+    | "CHAIR_SPEECH";
+  publishedAt: string;
+  url: string | null;
 };
 
 type CloudflareQueueMessage = {
@@ -33,6 +43,15 @@ export async function publishRawArticleJob(
 
 export async function publishMacroObservationJob(
   payload: Extract<QueueJobPayload, { jobType: "process_macro_observation" }>,
+): Promise<void> {
+  await publishQueueJob(payload);
+}
+
+export async function publishCentralBankDocumentJob(
+  payload: Extract<
+    QueueJobPayload,
+    { jobType: "process_central_bank_document" }
+  >,
 ): Promise<void> {
   await publishQueueJob(payload);
 }

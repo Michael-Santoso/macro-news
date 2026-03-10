@@ -25,4 +25,7 @@ export const env = {
   fredIngestionIntervalMs: Number(
     process.env.FRED_INGESTION_INTERVAL_MS ?? 24 * 60 * 60 * 1000,
   ),
+  fedIngestionIntervalMs: Number(
+    process.env.FED_INGESTION_INTERVAL_MS ?? 24 * 60 * 60 * 1000,
+  ),
 };

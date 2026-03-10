@@ -2,12 +2,12 @@
 
 ## Goal
 
-Build a system that converts **financial news and macroeconomic data into structured events** that can be queried, analyzed, and visualized.
+Build a system that converts financial news, macroeconomic data, and central-bank primary sources into structured events that can be queried, analyzed, and visualized.
 
 The system will:
 
 1. Fetch financial news
-2. Store raw articles
+2. Store raw source documents
 3. Extract structured events
 4. Track macroeconomic themes
 5. Provide answers via chatbot and dashboard
@@ -19,23 +19,23 @@ The system will:
 System pipeline:
 
 Scheduler
-→ Data Ingestion
-→ Raw Storage
-→ Event Extraction
-→ Structured Database
-→ Theme Analysis
-→ Retrieval / RAG
-→ Dashboard
+-> Data ingestion
+-> Raw storage
+-> Event extraction
+-> Structured database
+-> Theme analysis
+-> Retrieval / RAG
+-> Dashboard
 
 Pipeline diagram:
 
 Scheduler
-→ News APIs / RSS / Macro APIs
-→ RawArticles Table
-→ Processing Pipeline
-→ Events + Entities Tables
-→ ThemeStats
-→ UI + Chatbot
+-> News APIs / RSS / macro APIs / central-bank sources
+-> RawArticle + MacroObservation + CentralBankDocument tables
+-> Processing pipeline
+-> Events + Entities tables
+-> ThemeStats
+-> UI + Chatbot
 
 ---
 
@@ -51,11 +51,9 @@ Sources include:
 - GDELT
 - Alpha Vantage News
 - MarketAux
-- RSS feeds (Reuters, CNBC, FT)
+- RSS feeds
 
-Articles are normalized and stored in the **RawArticles table**.
-
-This is the **first system component to implement.**
+Articles are normalized and stored in the `RawArticle` table.
 
 ---
 
@@ -70,20 +68,27 @@ Sources:
 - World Bank
 - OECD
 
-These sources provide macro signals such as:
-
-GDP
-inflation
-interest rates
-unemployment
-
 These datasets help contextualize news events.
+
+---
+
+## 2.5 Central Bank Primary-Source Ingestion
+
+Fetch official central-bank documents and commentary.
+
+Current Federal Reserve coverage:
+
+- FOMC meeting minutes
+- FOMC projections materials
+- Chair speeches
+
+Documents are stored in `CentralBankDocument` and queued only after the database write succeeds.
 
 ---
 
 ## 3 Event Extraction
 
-Convert raw news into structured events.
+Convert raw source material into structured events.
 
 Extraction outputs:
 
@@ -101,11 +106,11 @@ Extraction outputs:
 
 Track macro themes such as:
 
-inflation
-bank crisis
-oil supply shocks
-trade war
-sanctions
+- inflation
+- bank crisis
+- oil supply shocks
+- trade war
+- sanctions
 
 Metrics include:
 
@@ -119,10 +124,10 @@ Metrics include:
 
 Events are stored with relationships:
 
-event → theme
-event → entity
-event → region
-event → asset class
+- event -> theme
+- event -> entity
+- event -> region
+- event -> asset class
 
 This enables querying and linking developments over time.
 
@@ -140,15 +145,15 @@ The system retrieves relevant events and generates an answer using RAG.
 
 # MVP Scope
 
-The MVP will include:
+The MVP includes:
 
-✓ News ingestion
-✓ Raw article database
-✓ Event extraction
-✓ Theme classification
-✓ Basic dashboard
+- [x] News ingestion
+- [x] Raw article database
+- [x] Event extraction
+- [x] Theme classification
+- [x] Basic dashboard
 
-Advanced features (optional):
+Advanced features:
 
 - knowledge graph
 - advanced event linking
@@ -158,9 +163,9 @@ Advanced features (optional):
 
 # Development Priority
 
-1 News ingestion
-2 Database schema
-3 Event extraction
-4 Theme tracking
-5 Chatbot / RAG
-6 UI
+1. News ingestion
+2. Database schema
+3. Event extraction
+4. Theme tracking
+5. Chatbot / RAG
+6. UI

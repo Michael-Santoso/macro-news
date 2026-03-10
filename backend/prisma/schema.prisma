@@ -60,11 +60,48 @@ model MacroObservationCatalog {
   @@map("MacroObservationCatalog")
 }
 
+model CentralBankDocument {
+  id String @id @default(cuid())
+
+  institution CentralBankInstitution
+  documentType CentralBankDocumentType
+
+  externalKey String @unique
+  title String
+  url String?
+  pdfUrl String?
+  sourceFeed String?
+  speaker String?
+
+  publishedAt DateTime
+  meetingDate DateTime?
+
+  description String?
+  content String?
+  contentHash String?
+
+  processingStatus ProcessingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum ProcessingStatus {
   PENDING
   PROCESSING
   PROCESSED
   FAILED
+}
+
+enum CentralBankInstitution {
+  FEDERAL_RESERVE
+}
+
+enum CentralBankDocumentType {
+  FOMC_MEETING
+  FOMC_MINUTES
+  FOMC_PROJECTIONS
+  CHAIR_SPEECH
 }
 
 model Event {

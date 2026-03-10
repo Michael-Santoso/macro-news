@@ -1,5 +1,9 @@
 import { env } from "../config/env";
-import { runMacroIngestionJob, runNewsIngestionJob } from "../jobs";
+import {
+  runCentralBankIngestionJob,
+  runMacroIngestionJob,
+  runNewsIngestionJob,
+} from "../jobs";
 
 type Scheduler = {
   start: () => void;
@@ -9,8 +13,10 @@ type Scheduler = {
 export function createScheduler(): Scheduler {
   let newsIntervalId: NodeJS.Timeout | null = null;
   let macroIntervalId: NodeJS.Timeout | null = null;
+  let centralBankIntervalId: NodeJS.Timeout | null = null;
   let isNewsJobRunning = false;
   let isMacroJobRunning = false;
+  let isCentralBankJobRunning = false;
 
   const runScheduledNewsIngestion = async (): Promise<void> => {
     if (isNewsJobRunning) {
@@ -50,9 +56,28 @@ export function createScheduler(): Scheduler {
     }
   };
 
+  const runScheduledCentralBankIngestion = async (): Promise<void> => {
+    if (isCentralBankJobRunning) {
+      return;
+    }
+
+    isCentralBankJobRunning = true;
+
+    try {
+      console.log(
+        `[${new Date().toISOString()}] Starting scheduled central bank ingestion run`,
+      );
+      await runCentralBankIngestionJob();
+    } catch (error) {
+      console.error("Scheduled central bank ingestion failed", error);
+    } finally {
+      isCentralBankJobRunning = false;
+    }
+  };
+
   return {
     start() {
-      if (newsIntervalId || macroIntervalId) {
+      if (newsIntervalId || macroIntervalId || centralBankIntervalId) {
         return;
       }
 
@@ -67,6 +92,11 @@ export function createScheduler(): Scheduler {
           void runScheduledMacroIngestion();
         }, env.fredIngestionIntervalMs);
       }
+
+      void runScheduledCentralBankIngestion();
+      centralBankIntervalId = setInterval(() => {
+        void runScheduledCentralBankIngestion();
+      }, env.fedIngestionIntervalMs);
     },
     stop() {
       if (newsIntervalId) {
@@ -77,6 +107,11 @@ export function createScheduler(): Scheduler {
       if (macroIntervalId) {
         clearInterval(macroIntervalId);
         macroIntervalId = null;
+      }
+
+      if (centralBankIntervalId) {
+        clearInterval(centralBankIntervalId);
+        centralBankIntervalId = null;
       }
     },
   };
