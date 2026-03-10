@@ -12,13 +12,62 @@ type QueueJobPayload = {
   observationDate: string;
   value: string;
 } | {
-  jobType: "process_central_bank_document";
-  centralBankDocumentId: string;
-  institution: "FEDERAL_RESERVE";
+  jobType: "process_official_announcement";
+  officialAnnouncementId: string;
+  institution:
+    | "FEDERAL_RESERVE"
+    | "EUROPEAN_CENTRAL_BANK"
+    | "BANK_OF_ENGLAND"
+    | "BANK_OF_JAPAN"
+    | "PEOPLES_BANK_OF_CHINA";
+  region: "US" | "EUROPE" | "UNITED_KINGDOM" | "JAPAN" | "CHINA";
   documentType:
-    | "FOMC_MINUTES"
-    | "FOMC_PROJECTIONS"
-    | "CHAIR_SPEECH";
+    | "RATE_DECISION"
+    | "MONETARY_POLICY_STATEMENT"
+    | "PRESS_CONFERENCE_TRANSCRIPT"
+    | "MINUTES"
+    | "PROJECTIONS"
+    | "MONETARY_POLICY_REPORT"
+    | "SPEECH"
+    | "LIQUIDITY_OPERATION"
+    | "ASSET_PURCHASE_PROGRAM"
+    | "RESERVE_REQUIREMENT_RATIO"
+    | "PROPERTY_SUPPORT";
+  publishedAt: string;
+  url: string | null;
+} | {
+  jobType: "process_regulatory_announcement";
+  regulatoryAnnouncementId: string;
+  institution:
+    | "SEC"
+    | "FCA"
+    | "MAS"
+    | "ESMA"
+    | "WTO"
+    | "US_COMMERCE"
+    | "EUROPEAN_COMMISSION";
+  jurisdiction: "US" | "UK" | "SG" | "EU" | "GLOBAL";
+  category:
+    | "FINANCIAL_REGULATION"
+    | "TRADE_POLICY"
+    | "GEOPOLITICAL_REGULATION"
+    | "AI_REGULATION"
+    | "BANK_CAPITAL"
+    | "ENERGY_POLICY"
+    | "ENVIRONMENTAL_RULES"
+    | "GENERAL_REGULATION";
+  documentType:
+    | "PRESS_RELEASE"
+    | "SPEECH"
+    | "CONSULTATION"
+    | "PROPOSED_RULE"
+    | "FINAL_RULE"
+    | "GUIDANCE"
+    | "CIRCULAR"
+    | "ENFORCEMENT_ACTION"
+    | "FAQ"
+    | "REPORT"
+    | "NOTICE";
   publishedAt: string;
   url: string | null;
 };
@@ -47,10 +96,19 @@ export async function publishMacroObservationJob(
   await publishQueueJob(payload);
 }
 
-export async function publishCentralBankDocumentJob(
+export async function publishOfficialAnnouncementJob(
   payload: Extract<
     QueueJobPayload,
-    { jobType: "process_central_bank_document" }
+    { jobType: "process_official_announcement" }
+  >,
+): Promise<void> {
+  await publishQueueJob(payload);
+}
+
+export async function publishRegulatoryAnnouncementJob(
+  payload: Extract<
+    QueueJobPayload,
+    { jobType: "process_regulatory_announcement" }
   >,
 ): Promise<void> {
   await publishQueueJob(payload);

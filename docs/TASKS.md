@@ -28,6 +28,8 @@
 - [x] Expand FRED coverage for core macro indicator series
 - [x] Separate daily FRED scheduler and series/date-based storage updates
 - [x] Add Federal Reserve primary-source ingestion for speeches, minutes, and projections
+- [x] Add daily regulatory-announcement ingestion for SEC, FCA, WTO, and BIS/Commerce
+- [x] Expand official announcement ingestion for ECB, BOE, BOJ, and PBOC with region-aware storage
 
 ## Phase 3 - Event Extraction
 

@@ -1,10 +1,10 @@
-import { runCentralBankIngestionJob } from "../jobs";
+import { runOfficialAnnouncementIngestionJob } from "../jobs";
 
 async function main(): Promise<void> {
-  await runCentralBankIngestionJob();
+  await runOfficialAnnouncementIngestionJob();
 }
 
 void main().catch((error: unknown) => {
-  console.error("Central bank ingestion failed", error);
+  console.error("Official announcement ingestion failed", error);
   process.exit(1);
 });

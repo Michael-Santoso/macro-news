@@ -165,8 +165,28 @@ Current coverage:
 Notes:
 
 - These are primary-source documents rather than market-news articles.
-- Content is stored in `CentralBankDocument`.
+- Content is stored in `OfficialAnnouncement`.
 - Deduplication is based on `externalKey`, typically the canonical document URL.
+
+---
+
+## Regulatory Announcement Sources
+
+Official regulatory sources currently used for regulatory-announcement ingestion.
+
+Current coverage:
+
+- SEC press-release RSS
+- SEC speeches RSS
+- FCA sitemap discovery for press releases and speeches
+- WTO latest news RSS
+- BIS / U.S. Commerce federal-register notices page
+
+Notes:
+
+- These are stored in `RegulatoryAnnouncement`.
+- Deduplication is based on `externalKey`, typically the canonical document URL.
+- Queue publication happens only after the database write succeeds.
 
 ---
 

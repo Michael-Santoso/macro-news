@@ -10,6 +10,8 @@
     "ingest:newsapi": "tsx src/scripts/run-news-ingestion.ts",
     "ingest:macro": "tsx src/scripts/run-macro-ingestion.ts",
     "ingest:fed": "tsx src/scripts/run-central-bank-ingestion.ts",
+    "ingest:announcements": "tsx src/scripts/run-central-bank-ingestion.ts",
+    "ingest:regulatory": "tsx src/scripts/run-regulatory-ingestion.ts",
     "sync:fred-catalog": "tsx src/scripts/sync-fred-series-catalog.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

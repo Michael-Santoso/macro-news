@@ -45,10 +45,24 @@ Current message shapes:
 
 ```json
 {
-  "jobType": "process_central_bank_document",
-  "centralBankDocumentId": "<central_bank_document_id>",
+  "jobType": "process_official_announcement",
+  "officialAnnouncementId": "<official_announcement_id>",
   "institution": "FEDERAL_RESERVE",
-  "documentType": "FOMC_MINUTES",
+  "region": "US",
+  "documentType": "MINUTES",
+  "publishedAt": "<iso_timestamp>",
+  "url": "<official_document_url_or_null>"
+}
+```
+
+```json
+{
+  "jobType": "process_regulatory_announcement",
+  "regulatoryAnnouncementId": "<regulatory_announcement_id>",
+  "institution": "SEC",
+  "jurisdiction": "US",
+  "category": "FINANCIAL_REGULATION",
+  "documentType": "PRESS_RELEASE",
   "publishedAt": "<iso_timestamp>",
   "url": "<official_document_url_or_null>"
 }
@@ -60,10 +74,11 @@ Current message shapes:
 2. Inspect `jobType`.
 3. For `process_raw_article`, use `rawArticleId` to fetch the article from `RawArticle`.
 4. For `process_macro_observation`, use `macroObservationId` to fetch the observation from `MacroObservation`.
-5. For `process_central_bank_document`, use `centralBankDocumentId` to fetch the document from `CentralBankDocument`.
-6. Run downstream analysis.
-7. Write extracted output back to Supabase.
-8. Update status fields where applicable.
+5. For `process_official_announcement`, use `officialAnnouncementId` to fetch the document from `OfficialAnnouncement`.
+6. For `process_regulatory_announcement`, use `regulatoryAnnouncementId` to fetch the document from `RegulatoryAnnouncement`.
+7. Run downstream analysis.
+8. Write extracted output back to Supabase.
+9. Update status fields where applicable.
 
 ## RawArticle Fields
 
@@ -89,12 +104,13 @@ Main fields:
 - `observationDate`
 - `value`
 
-## CentralBankDocument Fields
+## OfficialAnnouncement Fields
 
 Main fields:
 
 - `id`
 - `institution`
+- `region`
 - `documentType`
 - `externalKey`
 - `title`
@@ -104,6 +120,29 @@ Main fields:
 - `publishedAt`
 - `meetingDate`
 - `description`
+- `content`
+- `contentHash`
+- `processingStatus`
+
+## RegulatoryAnnouncement Fields
+
+Main fields:
+
+- `id`
+- `institution`
+- `jurisdiction`
+- `category`
+- `documentType`
+- `sourceType`
+- `externalKey`
+- `title`
+- `url`
+- `pdfUrl`
+- `sourceFeed`
+- `publishedAt`
+- `effectiveAt`
+- `commentDeadline`
+- `summary`
 - `content`
 - `contentHash`
 - `processingStatus`

@@ -1,8 +1,9 @@
 import { env } from "../config/env";
 import {
-  runCentralBankIngestionJob,
   runMacroIngestionJob,
   runNewsIngestionJob,
+  runOfficialAnnouncementIngestionJob,
+  runRegulatoryIngestionJob,
 } from "../jobs";
 
 type Scheduler = {
@@ -13,10 +14,12 @@ type Scheduler = {
 export function createScheduler(): Scheduler {
   let newsIntervalId: NodeJS.Timeout | null = null;
   let macroIntervalId: NodeJS.Timeout | null = null;
-  let centralBankIntervalId: NodeJS.Timeout | null = null;
+  let officialAnnouncementIntervalId: NodeJS.Timeout | null = null;
+  let regulatoryIntervalId: NodeJS.Timeout | null = null;
   let isNewsJobRunning = false;
   let isMacroJobRunning = false;
-  let isCentralBankJobRunning = false;
+  let isOfficialAnnouncementJobRunning = false;
+  let isRegulatoryJobRunning = false;
 
   const runScheduledNewsIngestion = async (): Promise<void> => {
     if (isNewsJobRunning) {
@@ -56,28 +59,52 @@ export function createScheduler(): Scheduler {
     }
   };
 
-  const runScheduledCentralBankIngestion = async (): Promise<void> => {
-    if (isCentralBankJobRunning) {
+  const runScheduledOfficialAnnouncementIngestion = async (): Promise<void> => {
+    if (isOfficialAnnouncementJobRunning) {
       return;
     }
 
-    isCentralBankJobRunning = true;
+    isOfficialAnnouncementJobRunning = true;
 
     try {
       console.log(
-        `[${new Date().toISOString()}] Starting scheduled central bank ingestion run`,
+        `[${new Date().toISOString()}] Starting scheduled official announcement ingestion run`,
       );
-      await runCentralBankIngestionJob();
+      await runOfficialAnnouncementIngestionJob();
     } catch (error) {
-      console.error("Scheduled central bank ingestion failed", error);
+      console.error("Scheduled official announcement ingestion failed", error);
     } finally {
-      isCentralBankJobRunning = false;
+      isOfficialAnnouncementJobRunning = false;
+    }
+  };
+
+  const runScheduledRegulatoryIngestion = async (): Promise<void> => {
+    if (isRegulatoryJobRunning) {
+      return;
+    }
+
+    isRegulatoryJobRunning = true;
+
+    try {
+      console.log(
+        `[${new Date().toISOString()}] Starting scheduled regulatory ingestion run`,
+      );
+      await runRegulatoryIngestionJob();
+    } catch (error) {
+      console.error("Scheduled regulatory ingestion failed", error);
+    } finally {
+      isRegulatoryJobRunning = false;
     }
   };
 
   return {
     start() {
-      if (newsIntervalId || macroIntervalId || centralBankIntervalId) {
+      if (
+        newsIntervalId ||
+        macroIntervalId ||
+        officialAnnouncementIntervalId ||
+        regulatoryIntervalId
+      ) {
         return;
       }
 
@@ -93,10 +120,15 @@ export function createScheduler(): Scheduler {
         }, env.fredIngestionIntervalMs);
       }
 
-      void runScheduledCentralBankIngestion();
-      centralBankIntervalId = setInterval(() => {
-        void runScheduledCentralBankIngestion();
-      }, env.fedIngestionIntervalMs);
+      void runScheduledOfficialAnnouncementIngestion();
+      officialAnnouncementIntervalId = setInterval(() => {
+        void runScheduledOfficialAnnouncementIngestion();
+      }, env.officialAnnouncementIngestionIntervalMs);
+
+      void runScheduledRegulatoryIngestion();
+      regulatoryIntervalId = setInterval(() => {
+        void runScheduledRegulatoryIngestion();
+      }, env.regulatoryIngestionIntervalMs);
     },
     stop() {
       if (newsIntervalId) {
@@ -109,9 +141,14 @@ export function createScheduler(): Scheduler {
         macroIntervalId = null;
       }
 
-      if (centralBankIntervalId) {
-        clearInterval(centralBankIntervalId);
-        centralBankIntervalId = null;
+      if (officialAnnouncementIntervalId) {
+        clearInterval(officialAnnouncementIntervalId);
+        officialAnnouncementIntervalId = null;
+      }
+
+      if (regulatoryIntervalId) {
+        clearInterval(regulatoryIntervalId);
+        regulatoryIntervalId = null;
       }
     },
   };

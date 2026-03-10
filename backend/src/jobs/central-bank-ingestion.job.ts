@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
-import { ingestFederalReserveDocuments } from "../services";
+import { ingestOfficialAnnouncements } from "../services";
 
-export async function runCentralBankIngestionJob(): Promise<void> {
+export async function runOfficialAnnouncementIngestionJob(): Promise<void> {
   try {
-    const result = await ingestFederalReserveDocuments();
+    const result = await ingestOfficialAnnouncements();
     console.log(
-      `Central bank ingestion complete: documents=${result.documents}, stored=${result.stored}`,
+      `Official announcement ingestion complete: documents=${result.documents}, stored=${result.stored}`,
     );
   } catch (error) {
     if (
@@ -13,7 +13,7 @@ export async function runCentralBankIngestionJob(): Promise<void> {
       error.code === "P2021"
     ) {
       console.error(
-        'Central bank ingestion skipped: database table "CentralBankDocument" is missing. Run the Prisma migration first.',
+        'Official announcement ingestion skipped: database table "OfficialAnnouncement" is missing. Run the Prisma migration first.',
       );
       return;
     }

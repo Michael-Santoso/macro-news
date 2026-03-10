@@ -1,16 +1,13 @@
-import {
-  type CentralBankDocument,
-  type CentralBankDocumentType,
-  Prisma,
-} from "@prisma/client";
+import { Prisma, type OfficialAnnouncement } from "@prisma/client";
 import prisma from "../../lib/prisma";
-import { publishCentralBankDocumentJob } from "../queue";
-import type { CentralBankDocumentInput } from "./federal-reserve.client";
+import { publishOfficialAnnouncementJob } from "../queue";
+import type { OfficialAnnouncementInput } from "./official-announcement.types";
 
-type StoredCentralBankDocument = Pick<
-  CentralBankDocument,
+type StoredOfficialAnnouncement = Pick<
+  OfficialAnnouncement,
   | "id"
   | "institution"
+  | "region"
   | "documentType"
   | "externalKey"
   | "url"
@@ -26,9 +23,9 @@ type StoredCentralBankDocument = Pick<
 >;
 
 function deduplicateDocuments(
-  documents: CentralBankDocumentInput[],
-): CentralBankDocumentInput[] {
-  const uniqueDocuments = new Map<string, CentralBankDocumentInput>();
+  documents: OfficialAnnouncementInput[],
+): OfficialAnnouncementInput[] {
+  const uniqueDocuments = new Map<string, OfficialAnnouncementInput>();
 
   for (const document of documents) {
     if (!uniqueDocuments.has(document.externalKey)) {
@@ -39,43 +36,36 @@ function deduplicateDocuments(
   return [...uniqueDocuments.values()];
 }
 
-function hasDocumentChanged(
-  existingDocument: StoredCentralBankDocument,
-  incomingDocument: CentralBankDocumentInput,
+function hasAnnouncementChanged(
+  existingAnnouncement: StoredOfficialAnnouncement,
+  incomingAnnouncement: OfficialAnnouncementInput,
 ): boolean {
   return (
-    existingDocument.title !== incomingDocument.title ||
-    existingDocument.url !== incomingDocument.url ||
-    existingDocument.pdfUrl !== incomingDocument.pdfUrl ||
-    existingDocument.sourceFeed !== incomingDocument.sourceFeed ||
-    existingDocument.speaker !== incomingDocument.speaker ||
-    existingDocument.publishedAt.getTime() !== incomingDocument.publishedAt.getTime() ||
-    existingDocument.meetingDate?.getTime() !== incomingDocument.meetingDate?.getTime() ||
-    existingDocument.description !== incomingDocument.description ||
-    existingDocument.content !== incomingDocument.content ||
-    existingDocument.contentHash !== incomingDocument.contentHash
+    existingAnnouncement.title !== incomingAnnouncement.title ||
+    existingAnnouncement.institution !== incomingAnnouncement.institution ||
+    existingAnnouncement.region !== incomingAnnouncement.region ||
+    existingAnnouncement.documentType !== incomingAnnouncement.documentType ||
+    existingAnnouncement.url !== incomingAnnouncement.url ||
+    existingAnnouncement.pdfUrl !== incomingAnnouncement.pdfUrl ||
+    existingAnnouncement.sourceFeed !== incomingAnnouncement.sourceFeed ||
+    existingAnnouncement.speaker !== incomingAnnouncement.speaker ||
+    existingAnnouncement.publishedAt.getTime() !== incomingAnnouncement.publishedAt.getTime() ||
+    existingAnnouncement.meetingDate?.getTime() !== incomingAnnouncement.meetingDate?.getTime() ||
+    existingAnnouncement.description !== incomingAnnouncement.description ||
+    existingAnnouncement.content !== incomingAnnouncement.content ||
+    existingAnnouncement.contentHash !== incomingAnnouncement.contentHash
   );
 }
 
-function isQueueableDocumentType(
-  documentType: CentralBankDocumentType,
-): documentType is "FOMC_MINUTES" | "FOMC_PROJECTIONS" | "CHAIR_SPEECH" {
-  return (
-    documentType === "FOMC_MINUTES" ||
-    documentType === "FOMC_PROJECTIONS" ||
-    documentType === "CHAIR_SPEECH"
-  );
-}
-
-export async function storeCentralBankDocuments(
-  documents: CentralBankDocumentInput[],
+export async function storeOfficialAnnouncements(
+  documents: OfficialAnnouncementInput[],
 ): Promise<number> {
   if (documents.length === 0) {
     return 0;
   }
 
   const deduplicatedDocuments = deduplicateDocuments(documents);
-  const existingDocuments = await prisma.centralBankDocument.findMany({
+  const existingDocuments = await prisma.officialAnnouncement.findMany({
     where: {
       externalKey: {
         in: deduplicatedDocuments.map((document) => document.externalKey),
@@ -84,6 +74,7 @@ export async function storeCentralBankDocuments(
     select: {
       id: true,
       institution: true,
+      region: true,
       documentType: true,
       externalKey: true,
       url: true,
@@ -106,8 +97,8 @@ export async function storeCentralBankDocuments(
   for (const document of deduplicatedDocuments) {
     const existingDocument = existingByKey.get(document.externalKey);
     const storedDocument = existingDocument
-      ? await updateCentralBankDocument(existingDocument, document)
-      : await createCentralBankDocument(document);
+      ? await updateOfficialAnnouncement(existingDocument, document)
+      : await createOfficialAnnouncement(document);
 
     if (!storedDocument) {
       continue;
@@ -115,22 +106,19 @@ export async function storeCentralBankDocuments(
 
     storedCount += 1;
 
-    if (!isQueueableDocumentType(storedDocument.documentType)) {
-      continue;
-    }
-
     try {
-      await publishCentralBankDocumentJob({
-        jobType: "process_central_bank_document",
-        centralBankDocumentId: storedDocument.id,
+      await publishOfficialAnnouncementJob({
+        jobType: "process_official_announcement",
+        officialAnnouncementId: storedDocument.id,
         institution: storedDocument.institution,
+        region: storedDocument.region,
         documentType: storedDocument.documentType,
         publishedAt: storedDocument.publishedAt.toISOString(),
         url: storedDocument.url,
       });
     } catch (error) {
       console.error(
-        `Queue publish failed for central bank document ${storedDocument.id}`,
+        `Queue publish failed for official announcement ${storedDocument.id}`,
         error,
       );
     }
@@ -139,15 +127,16 @@ export async function storeCentralBankDocuments(
   return storedCount;
 }
 
-async function createCentralBankDocument(
-  document: CentralBankDocumentInput,
-): Promise<StoredCentralBankDocument | null> {
+async function createOfficialAnnouncement(
+  document: OfficialAnnouncementInput,
+): Promise<StoredOfficialAnnouncement | null> {
   try {
-    return await prisma.centralBankDocument.create({
+    return await prisma.officialAnnouncement.create({
       data: document,
       select: {
         id: true,
         institution: true,
+        region: true,
         documentType: true,
         externalKey: true,
         url: true,
@@ -174,36 +163,38 @@ async function createCentralBankDocument(
   }
 }
 
-async function updateCentralBankDocument(
-  existingDocument: StoredCentralBankDocument,
-  incomingDocument: CentralBankDocumentInput,
-): Promise<StoredCentralBankDocument | null> {
-  if (!hasDocumentChanged(existingDocument, incomingDocument)) {
+async function updateOfficialAnnouncement(
+  existingAnnouncement: StoredOfficialAnnouncement,
+  incomingAnnouncement: OfficialAnnouncementInput,
+): Promise<StoredOfficialAnnouncement | null> {
+  if (!hasAnnouncementChanged(existingAnnouncement, incomingAnnouncement)) {
     return null;
   }
 
-  return prisma.centralBankDocument.update({
+  return prisma.officialAnnouncement.update({
     where: {
-      externalKey: existingDocument.externalKey,
+      externalKey: existingAnnouncement.externalKey,
     },
     data: {
-      institution: incomingDocument.institution,
-      documentType: incomingDocument.documentType,
-      title: incomingDocument.title,
-      url: incomingDocument.url,
-      pdfUrl: incomingDocument.pdfUrl,
-      sourceFeed: incomingDocument.sourceFeed,
-      speaker: incomingDocument.speaker,
-      publishedAt: incomingDocument.publishedAt,
-      meetingDate: incomingDocument.meetingDate,
-      description: incomingDocument.description,
-      content: incomingDocument.content,
-      contentHash: incomingDocument.contentHash,
+      institution: incomingAnnouncement.institution,
+      region: incomingAnnouncement.region,
+      documentType: incomingAnnouncement.documentType,
+      title: incomingAnnouncement.title,
+      url: incomingAnnouncement.url,
+      pdfUrl: incomingAnnouncement.pdfUrl,
+      sourceFeed: incomingAnnouncement.sourceFeed,
+      speaker: incomingAnnouncement.speaker,
+      publishedAt: incomingAnnouncement.publishedAt,
+      meetingDate: incomingAnnouncement.meetingDate,
+      description: incomingAnnouncement.description,
+      content: incomingAnnouncement.content,
+      contentHash: incomingAnnouncement.contentHash,
       processingStatus: "PENDING",
     },
     select: {
       id: true,
       institution: true,
+      region: true,
       documentType: true,
       externalKey: true,
       url: true,

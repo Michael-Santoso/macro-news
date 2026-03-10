@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a system that converts financial news, macroeconomic data, and central-bank primary sources into structured events that can be queried, analyzed, and visualized.
+Build a system that converts financial news, macroeconomic data, central-bank primary sources, and regulatory announcements into structured events that can be queried, analyzed, and visualized.
 
 The system will:
 
@@ -30,8 +30,8 @@ Scheduler
 Pipeline diagram:
 
 Scheduler
--> News APIs / RSS / macro APIs / central-bank sources
--> RawArticle + MacroObservation + CentralBankDocument tables
+-> News APIs / RSS / macro APIs / central-bank sources / regulatory sources
+-> RawArticle + MacroObservation + OfficialAnnouncement + RegulatoryAnnouncement tables
 -> Processing pipeline
 -> Events + Entities tables
 -> ThemeStats
@@ -72,17 +72,34 @@ These datasets help contextualize news events.
 
 ---
 
-## 2.5 Central Bank Primary-Source Ingestion
+## 2.5 Official Announcement Ingestion
 
-Fetch official central-bank documents and commentary.
+Fetch official central-bank documents, policy commentary, and related monetary-policy announcements.
 
-Current Federal Reserve coverage:
+Current coverage:
 
-- FOMC meeting minutes
-- FOMC projections materials
-- Chair speeches
+- Federal Reserve minutes, projections, and chair speeches
+- European Central Bank rate decisions, press-conference materials, accounts, and speeches
+- Bank of England MPC decisions, Monetary Policy Reports, and speeches
+- Bank of Japan policy statements, outlook reports, and speeches
+- People's Bank of China RRR, liquidity, policy-statement, and property-support pages
 
-Documents are stored in `CentralBankDocument` and queued only after the database write succeeds.
+Announcements are stored in `OfficialAnnouncement` and queued only after the database write succeeds.
+
+---
+
+## 2.6 Regulatory Announcement Ingestion
+
+Fetch official regulatory announcements and primary-source releases.
+
+Current coverage:
+
+- SEC press releases and speeches
+- FCA press releases and speeches
+- WTO latest news feed
+- BIS / U.S. Commerce federal-register notices
+
+Announcements are stored in `RegulatoryAnnouncement` and queued only after the database write succeeds.
 
 ---
 
