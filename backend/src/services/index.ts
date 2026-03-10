@@ -1,4 +1,5 @@
 export * from "./event.service";
+export * from "./dashboard.service";
 export * from "./ingestion";
 export * from "./macro";
 export * from "./central-bank";

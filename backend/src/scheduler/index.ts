@@ -4,6 +4,7 @@ import {
   runNewsIngestionJob,
   runOfficialAnnouncementIngestionJob,
   runRegulatoryIngestionJob,
+  runUpdateThemeScoresJob,
 } from "../jobs";
 
 type Scheduler = {
@@ -11,15 +12,19 @@ type Scheduler = {
   stop: () => void;
 };
 
+const THEME_SCORE_UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
 export function createScheduler(): Scheduler {
   let newsIntervalId: NodeJS.Timeout | null = null;
   let macroIntervalId: NodeJS.Timeout | null = null;
   let officialAnnouncementIntervalId: NodeJS.Timeout | null = null;
   let regulatoryIntervalId: NodeJS.Timeout | null = null;
+  let themeScoreIntervalId: NodeJS.Timeout | null = null;
   let isNewsJobRunning = false;
   let isMacroJobRunning = false;
   let isOfficialAnnouncementJobRunning = false;
   let isRegulatoryJobRunning = false;
+  let isThemeScoreJobRunning = false;
 
   const runScheduledNewsIngestion = async (): Promise<void> => {
     if (isNewsJobRunning) {
@@ -97,13 +102,33 @@ export function createScheduler(): Scheduler {
     }
   };
 
+  const runScheduledThemeScoreUpdate = async (): Promise<void> => {
+    if (isThemeScoreJobRunning) {
+      return;
+    }
+
+    isThemeScoreJobRunning = true;
+
+    try {
+      console.log(
+        `[${new Date().toISOString()}] Starting scheduled theme score update run`,
+      );
+      await runUpdateThemeScoresJob();
+    } catch (error) {
+      console.error("Scheduled theme score update failed", error);
+    } finally {
+      isThemeScoreJobRunning = false;
+    }
+  };
+
   return {
     start() {
       if (
         newsIntervalId ||
         macroIntervalId ||
         officialAnnouncementIntervalId ||
-        regulatoryIntervalId
+        regulatoryIntervalId ||
+        themeScoreIntervalId
       ) {
         return;
       }
@@ -129,6 +154,11 @@ export function createScheduler(): Scheduler {
       regulatoryIntervalId = setInterval(() => {
         void runScheduledRegulatoryIngestion();
       }, env.regulatoryIngestionIntervalMs);
+
+      void runScheduledThemeScoreUpdate();
+      themeScoreIntervalId = setInterval(() => {
+        void runScheduledThemeScoreUpdate();
+      }, THEME_SCORE_UPDATE_INTERVAL_MS);
     },
     stop() {
       if (newsIntervalId) {
@@ -149,6 +179,11 @@ export function createScheduler(): Scheduler {
       if (regulatoryIntervalId) {
         clearInterval(regulatoryIntervalId);
         regulatoryIntervalId = null;
+      }
+
+      if (themeScoreIntervalId) {
+        clearInterval(themeScoreIntervalId);
+        themeScoreIntervalId = null;
       }
     },
   };

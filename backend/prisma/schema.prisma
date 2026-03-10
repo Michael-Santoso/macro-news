@@ -45,6 +45,38 @@ model MacroObservation {
   @@unique([seriesId, observationDate])
 }
 
+model ThemeEvent {
+  id String @id @default(cuid())
+
+  theme MacroTheme
+  title String
+  summary String
+  region String?
+  assetClass AssetClass?
+  sourceType ThemeEventSourceType
+  sourceId String
+  sourceUrl String?
+  publishedAt DateTime
+  riskImplication String
+  createdAt DateTime @default(now())
+
+  @@unique([sourceType, sourceId, theme])
+}
+
+model ThemeScore {
+  theme MacroTheme
+  region String
+
+  dailyMentions Int @default(0)
+  weeklyMentions Int @default(0)
+  monthlyMentions Int @default(0)
+  momentumScore Int @default(0)
+  heatLevel ThemeHeatLevel @default(STABLE)
+  updatedAt DateTime @updatedAt
+
+  @@id([theme, region])
+}
+
 model MacroObservationCatalog {
   seriesId String @id
 
@@ -121,6 +153,31 @@ enum ProcessingStatus {
   PROCESSING
   PROCESSED
   FAILED
+}
+
+enum MacroTheme {
+  inflation
+  interest_rates
+  recession_growth
+  labor_market
+  liquidity_credit
+  energy_oil
+  china_growth
+  trade_policy
+  financial_regulation
+}
+
+enum ThemeEventSourceType {
+  RAW_ARTICLE
+  OFFICIAL_ANNOUNCEMENT
+  REGULATORY_ANNOUNCEMENT
+  MACRO_OBSERVATION
+}
+
+enum ThemeHeatLevel {
+  HOT
+  COOLING
+  STABLE
 }
 
 enum AnnouncementInstitution {
