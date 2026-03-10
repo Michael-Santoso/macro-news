@@ -2,7 +2,7 @@
 
 ## Phase 1 — Project Setup
 
-- [ ] Create frontend app
+- [x] Create frontend app
 - [x] Create backend app
 - [x] Set up Prisma in backend
 - [x] Connect PostgreSQL database

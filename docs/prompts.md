@@ -1,8 +1,18 @@
+Continue the tasks:
+
 Read docs/TASKS.md and complete the next unchecked task only.
 Follow the docs strictly.
 Keep changes minimal and modular.
 Update TASKS.md by checking off completed items.
 At the end, summarize what changed and what I should run next.
+
+Requirements:
+
+- Follow docs/SYSTEM.md and docs/DATABASE.md
+- Keep changes minimal and production-readable
+- Do not modify unrelated files
+- After completing, update TASKS.md by checking off the completed item
+- Briefly explain what was changed
 
 #
 

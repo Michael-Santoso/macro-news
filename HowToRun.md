@@ -59,6 +59,16 @@ cd backend
 npm run ingest:newsapi
 ```
 
-## Frontend Note
+## 5) Run Frontend (Next.js)
 
-Frontend is not initialized yet in this repo (no `frontend/package.json` yet).
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs at:
+
+```bash
+http://localhost:3001
+```
