@@ -18,7 +18,11 @@ CLOUDFLARE_QUEUE_ID=<cloudflare_queue_id>
 
 ## Queue Payload
 
-Messages are published with:
+Messages are published only after the corresponding row is successfully inserted into Supabase.
+
+If validation fails, or the database insert is skipped or fails, no queue message should be published.
+
+Current message shapes:
 
 ```json
 {
@@ -26,6 +30,16 @@ Messages are published with:
   "rawArticleId": "<raw_article_id>",
   "publishedAt": "<iso_timestamp>",
   "fetchedAt": "<iso_timestamp>"
+}
+```
+
+```json
+{
+  "jobType": "process_macro_observation",
+  "macroObservationId": "<macro_observation_id>",
+  "seriesId": "<fred_series_id>",
+  "observationDate": "<iso_timestamp>",
+  "value": "<raw_fred_value>"
 }
 ```
 
@@ -40,13 +54,25 @@ Example:
 }
 ```
 
+```json
+{
+  "jobType": "process_macro_observation",
+  "macroObservationId": "cmmdemo1234567890macro01",
+  "seriesId": "CPIAUCSL",
+  "observationDate": "2026-02-01T00:00:00.000Z",
+  "value": "319.082"
+}
+```
+
 ## Processor Flow
 
 1. Read queue message.
-2. Use `rawArticleId` to fetch the article from `RawArticle` in Supabase.
-3. Run AI analysis.
-4. Write extracted output back to Supabase.
-5. Update `RawArticle.processingStatus` to `PROCESSING`, then `PROCESSED` or `FAILED`.
+2. Inspect `jobType`.
+3. For `process_raw_article`, use `rawArticleId` to fetch the article from `RawArticle` in Supabase.
+4. For `process_macro_observation`, use `macroObservationId` to fetch the observation from `MacroObservation` in Supabase.
+5. Run downstream analysis.
+6. Write extracted output back to Supabase.
+7. Update status fields where applicable.
 
 ## RawArticle Fields
 
@@ -62,3 +88,12 @@ Main fields:
 - `publishedAt`
 - `fetchedAt`
 - `processingStatus`
+
+## MacroObservation Fields
+
+Main fields:
+
+- `id`
+- `seriesId`
+- `observationDate`
+- `value`

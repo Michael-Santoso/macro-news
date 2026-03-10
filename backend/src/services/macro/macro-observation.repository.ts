@@ -1,8 +1,16 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import type { FredSeriesSnapshot } from "./fred.client";
+import { publishMacroObservationJob } from "../queue";
 
 type StoredObservation = {
+  seriesId: string;
+  observationDate: Date;
+  value: string;
+};
+
+type CreatedMacroObservation = {
+  id: string;
   seriesId: string;
   observationDate: Date;
   value: string;
@@ -42,17 +50,47 @@ export async function storeFredSeriesSnapshots(
     return 0;
   }
 
-  const insertedCounts = await Promise.all(
-    normalizedSnapshots.map((snapshot) =>
-      prisma.$executeRaw(
-        Prisma.sql`
-          INSERT INTO "MacroObservation" ("id", "seriesId", "observationDate", "value", "createdAt", "updatedAt")
-          VALUES (${crypto.randomUUID()}, ${snapshot.seriesId}, ${snapshot.observationDate}, ${snapshot.value}, NOW(), NOW())
-          ON CONFLICT ("seriesId", "observationDate") DO NOTHING
-        `,
-      ),
-    ),
+  let storedCount = 0;
+
+  for (const snapshot of normalizedSnapshots) {
+    const createdObservation = await createMacroObservation(snapshot);
+
+    if (!createdObservation) {
+      continue;
+    }
+
+    storedCount += 1;
+
+    try {
+      await publishMacroObservationJob({
+        jobType: "process_macro_observation",
+        macroObservationId: createdObservation.id,
+        seriesId: createdObservation.seriesId,
+        observationDate: createdObservation.observationDate.toISOString(),
+        value: createdObservation.value,
+      });
+    } catch (error) {
+      console.error(
+        `Queue publish failed for macro observation ${createdObservation.id}`,
+        error,
+      );
+    }
+  }
+
+  return storedCount;
+}
+
+async function createMacroObservation(
+  snapshot: StoredObservation,
+): Promise<CreatedMacroObservation | null> {
+  const insertedRows = await prisma.$queryRaw<CreatedMacroObservation[]>(
+    Prisma.sql`
+      INSERT INTO "MacroObservation" ("id", "seriesId", "observationDate", "value", "createdAt", "updatedAt")
+      VALUES (${crypto.randomUUID()}, ${snapshot.seriesId}, ${snapshot.observationDate}, ${snapshot.value}, NOW(), NOW())
+      ON CONFLICT ("seriesId", "observationDate") DO NOTHING
+      RETURNING "id", "seriesId", "observationDate", "value"
+    `,
   );
 
-  return insertedCounts.reduce((sum, count) => sum + count, 0);
+  return insertedRows[0] ?? null;
 }

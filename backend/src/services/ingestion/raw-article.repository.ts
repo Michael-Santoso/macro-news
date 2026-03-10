@@ -1,6 +1,13 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { publishRawArticleJob } from "../queue";
 import type { NormalizedRawArticle } from "../../types/ingestion";
+
+type CreatedRawArticle = {
+  id: string;
+  publishedAt: Date;
+  fetchedAt: Date;
+};
 
 function deduplicateArticlesByUrl(
   articles: NormalizedRawArticle[],
@@ -41,44 +48,52 @@ export async function storeRawArticles(
   let storedCount = 0;
 
   for (const article of newArticles) {
+    const createdArticle = await createRawArticle(article);
+
+    if (!createdArticle) {
+      continue;
+    }
+
+    storedCount += 1;
+
     try {
-      const createdArticle = await prisma.rawArticle.create({
-        data: article,
-        select: {
-          id: true,
-          publishedAt: true,
-          fetchedAt: true,
-        },
+      await publishRawArticleJob({
+        jobType: "process_raw_article",
+        rawArticleId: createdArticle.id,
+        publishedAt: createdArticle.publishedAt.toISOString(),
+        fetchedAt: createdArticle.fetchedAt.toISOString(),
       });
-
-      storedCount += 1;
-
-      try {
-        await publishRawArticleJob({
-          jobType: "process_raw_article",
-          rawArticleId: createdArticle.id,
-          publishedAt: createdArticle.publishedAt.toISOString(),
-          fetchedAt: createdArticle.fetchedAt.toISOString(),
-        });
-      } catch (error) {
-        console.error(
-          `Queue publish failed for raw article ${createdArticle.id}`,
-          error,
-        );
-      }
     } catch (error) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "P2002"
-      ) {
-        continue;
-      }
-
-      throw error;
+      console.error(
+        `Queue publish failed for raw article ${createdArticle.id}`,
+        error,
+      );
     }
   }
 
   return storedCount;
+}
+
+async function createRawArticle(
+  article: NormalizedRawArticle,
+): Promise<CreatedRawArticle | null> {
+  try {
+    return await prisma.rawArticle.create({
+      data: article,
+      select: {
+        id: true,
+        publishedAt: true,
+        fetchedAt: true,
+      },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return null;
+    }
+
+    throw error;
+  }
 }

@@ -5,6 +5,12 @@ type QueueJobPayload = {
   rawArticleId: string;
   publishedAt: string;
   fetchedAt: string;
+} | {
+  jobType: "process_macro_observation";
+  macroObservationId: string;
+  seriesId: string;
+  observationDate: string;
+  value: string;
 };
 
 type CloudflareQueueMessage = {
@@ -20,8 +26,18 @@ function hasQueueConfig(): boolean {
 }
 
 export async function publishRawArticleJob(
-  payload: QueueJobPayload,
+  payload: Extract<QueueJobPayload, { jobType: "process_raw_article" }>,
 ): Promise<void> {
+  await publishQueueJob(payload);
+}
+
+export async function publishMacroObservationJob(
+  payload: Extract<QueueJobPayload, { jobType: "process_macro_observation" }>,
+): Promise<void> {
+  await publishQueueJob(payload);
+}
+
+async function publishQueueJob(payload: QueueJobPayload): Promise<void> {
   if (!hasQueueConfig()) {
     return;
   }
