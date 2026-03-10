@@ -16,7 +16,10 @@ npm install
 cp .env.example .env
 ```
 
-3. Update `DATABASE_URL` in `.env` with your PostgreSQL connection string.
+3. Update database connection strings in `.env` for Supabase:
+
+- `DATABASE_URL`: transaction pooler URL on port `6543` with `?pgbouncer=true`
+- `DIRECT_URL`: session/direct URL supported by your Supabase connect settings for Prisma CLI work
 
 4. Generate Prisma client:
 

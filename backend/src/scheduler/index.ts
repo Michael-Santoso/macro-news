@@ -1,5 +1,5 @@
 import { env } from "../config/env";
-import { runNewsIngestionJob } from "../jobs";
+import { runMacroIngestionJob, runNewsIngestionJob } from "../jobs";
 
 type Scheduler = {
   start: () => void;
@@ -19,8 +19,9 @@ export function createScheduler(): Scheduler {
 
     try {
       await runNewsIngestionJob();
+      await runMacroIngestionJob();
     } catch (error) {
-      console.error("Scheduled news ingestion failed", error);
+      console.error("Scheduled ingestion failed", error);
     } finally {
       isJobRunning = false;
     }

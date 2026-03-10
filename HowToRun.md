@@ -24,24 +24,13 @@ npx prisma migrate dev
 npm run dev
 ```
 
+For Supabase, set both `DATABASE_URL` and `DIRECT_URL` first.
+Use the transaction pooler URL for `DATABASE_URL` and the session/direct URL for `DIRECT_URL`.
+
 Backend runs at:
 
 ```bash
 http://localhost:3000
-```
-
-# Database
-
-Open Docker Desktop first, then run:
-
-```bash
-docker compose up -d
-```
-
-PostgreSQL runs at:
-
-```bash
-localhost:5433
 ```
 
 # (Optional) Database UI

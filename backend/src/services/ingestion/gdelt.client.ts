@@ -1,3 +1,4 @@
+import { fetchArticleMetadata } from "./article-metadata.client";
 import { fetchArticlesFromRssFeed, type RssArticle } from "./rss.client";
 
 const GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
@@ -14,8 +15,27 @@ export async function fetchFinancialNewsFromGdelt(): Promise<RssArticle[]> {
     format: "rssarchive",
   });
 
-  return fetchArticlesFromRssFeed({
+  const articles = await fetchArticlesFromRssFeed({
     source: "GDELT",
     url: `${GDELT_DOC_API_URL}?${params.toString()}`,
   });
+
+  const enrichedArticles = await Promise.all(
+    articles.map(async (article) => {
+      if (!article.url) {
+        return article;
+      }
+
+      const metadata = await fetchArticleMetadata(article.url);
+
+      return {
+        ...article,
+        description: article.description ?? metadata.description,
+        content: article.content ?? metadata.content,
+        author: article.author ?? metadata.author,
+      } satisfies RssArticle;
+    }),
+  );
+
+  return enrichedArticles;
 }

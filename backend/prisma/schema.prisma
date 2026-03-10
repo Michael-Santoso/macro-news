@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model RawArticle {
@@ -29,6 +30,19 @@ model RawArticle {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model MacroObservation {
+  id String @id @default(cuid())
+
+  seriesId String
+  observationDate DateTime
+  value String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([seriesId, observationDate])
 }
 
 enum ProcessingStatus {

@@ -23,29 +23,8 @@ export async function storeRawArticles(
   }
 
   const deduplicatedArticles = deduplicateArticlesByUrl(articles);
-  const urls = deduplicatedArticles.map((article) => article.url);
-  const existingArticles = await prisma.rawArticle.findMany({
-    where: {
-      url: {
-        in: urls,
-      },
-    },
-    select: {
-      url: true,
-    },
-  });
-
-  const existingUrls = new Set(existingArticles.map((article) => article.url));
-  const newArticles = deduplicatedArticles.filter(
-    (article) => !existingUrls.has(article.url),
-  );
-
-  if (newArticles.length === 0) {
-    return 0;
-  }
-
   const result = await prisma.rawArticle.createMany({
-    data: newArticles,
+    data: deduplicatedArticles,
     skipDuplicates: true,
   });
 

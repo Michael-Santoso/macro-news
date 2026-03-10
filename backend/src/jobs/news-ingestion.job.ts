@@ -6,23 +6,46 @@ import {
 
 export async function runNewsIngestionJob(): Promise<void> {
   const results: string[] = [];
+  let hasSuccessfulSource = false;
 
   if (process.env.NEWS_API_KEY) {
-    const newsApiResult = await ingestNewsFromNewsApi();
-    results.push(
-      `newsapi(fetched=${newsApiResult.fetched}, normalized=${newsApiResult.normalized}, stored=${newsApiResult.stored})`,
-    );
+    try {
+      const newsApiResult = await ingestNewsFromNewsApi();
+      results.push(
+        `newsapi(fetched=${newsApiResult.fetched}, normalized=${newsApiResult.normalized}, stored=${newsApiResult.stored})`,
+      );
+      hasSuccessfulSource = true;
+    } catch (error) {
+      console.error("NewsAPI ingestion failed", error);
+      results.push("newsapi(error)");
+    }
   }
 
-  const gdeltResult = await ingestNewsFromGdelt();
-  results.push(
-    `gdelt(fetched=${gdeltResult.fetched}, normalized=${gdeltResult.normalized}, stored=${gdeltResult.stored})`,
-  );
+  try {
+    const gdeltResult = await ingestNewsFromGdelt();
+    results.push(
+      `gdelt(fetched=${gdeltResult.fetched}, normalized=${gdeltResult.normalized}, stored=${gdeltResult.stored})`,
+    );
+    hasSuccessfulSource = true;
+  } catch (error) {
+    console.error("GDELT ingestion failed", error);
+    results.push("gdelt(error)");
+  }
 
-  const rssResult = await ingestNewsFromRss();
-  results.push(
-    `rss(fetched=${rssResult.fetched}, normalized=${rssResult.normalized}, stored=${rssResult.stored})`,
-  );
+  try {
+    const rssResult = await ingestNewsFromRss();
+    results.push(
+      `rss(fetched=${rssResult.fetched}, normalized=${rssResult.normalized}, stored=${rssResult.stored})`,
+    );
+    hasSuccessfulSource = true;
+  } catch (error) {
+    console.error("RSS ingestion failed", error);
+    results.push("rss(error)");
+  }
+
+  if (!hasSuccessfulSource) {
+    throw new Error("All ingestion sources failed");
+  }
 
   console.log(`News ingestion complete: ${results.join(", ")}`);
 }

@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "ingest:newsapi": "tsx src/scripts/run-news-ingestion.ts",
+    "ingest:macro": "tsx src/scripts/run-macro-ingestion.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
