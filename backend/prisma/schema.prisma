@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RawArticle {
+  id String @id @default(cuid())
+
+  source String
+  title String
+  url String @unique
+  description String?
+  content String?
+  author String?
+
+  publishedAt DateTime
+  fetchedAt DateTime @default(now())
+
+  processingStatus ProcessingStatus @default(PENDING)
+
+  events Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model Event {
+  id String @id @default(cuid())
+
+  rawArticleId String
+  rawArticle RawArticle @relation(fields: [rawArticleId], references: [id])
+
+  theme String
+  region String?
+  assetClass AssetClass?
+
+  sentiment Sentiment?
+  impactLabel ImpactLabel?
+
+  summary String?
+
+  eventDate DateTime?
+
+  entities Entity[]
+}
+
+model Entity {
+  id String @id @default(cuid())
+
+  name String
+  type String
+
+  eventId String
+  event Event @relation(fields: [eventId], references: [id])
+}
+
+enum AssetClass {
+  STOCK
+  BOND
+  FOREX
+  COMMODITY
+  MACRO
+}
+
+enum Sentiment {
+  RISK_ON
+  RISK_OFF
+  HAWKISH
+  DOVISH
+  NEUTRAL
+}
+
+enum ImpactLabel {
+  LOW
+  MEDIUM
+  HIGH
+}
