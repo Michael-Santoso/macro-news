@@ -18,6 +18,9 @@ export function createScheduler(): Scheduler {
     isJobRunning = true;
 
     try {
+      console.log(
+        `[${new Date().toISOString()}] Starting scheduled ingestion run`,
+      );
       await runNewsIngestionJob();
       await runMacroIngestionJob();
     } catch (error) {
