@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Macro News",
-  description: "Macro News frontend",
+  title: "Macro Tracker Dashboard",
+  description:
+    "Macro Tracker dashboard for monitoring macro theme heat and supporting evidence.",
 };
 
 export default function RootLayout({
@@ -17,4 +18,3 @@ export default function RootLayout({
     </html>
   );
 }
-

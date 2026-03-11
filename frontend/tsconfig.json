@@ -17,8 +17,18 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/components/dashboard/detail-panel.tsx",
+    "src/components/dashboard/events-timeline.tsx",
+    "src/components/dashboard/macro-releases-panel.tsx",
+    "src/components/dashboard/theme-evidence-stack.tsx"
+  ]
 }

@@ -7,6 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "bootstrap:dashboard": "tsx src/scripts/bootstrap-dashboard-data.ts",
+    "backfill:newsapi": "tsx src/scripts/backfill-newsapi.ts",
     "ingest:newsapi": "tsx src/scripts/run-news-ingestion.ts",
     "ingest:macro": "tsx src/scripts/run-macro-ingestion.ts",
     "ingest:fed": "tsx src/scripts/run-central-bank-ingestion.ts",

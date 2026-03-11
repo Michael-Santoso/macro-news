@@ -4,13 +4,24 @@ import {
   ingestNewsFromRss,
 } from "../services";
 
-export async function runNewsIngestionJob(): Promise<void> {
+type RunNewsIngestionJobOptions = {
+  from?: Date;
+  to?: Date;
+  gdeltTimespan?: string;
+};
+
+export async function runNewsIngestionJob(
+  options: RunNewsIngestionJobOptions = {},
+): Promise<void> {
   const results: string[] = [];
   let hasSuccessfulSource = false;
 
   if (process.env.NEWS_API_KEY) {
     try {
-      const newsApiResult = await ingestNewsFromNewsApi();
+      const newsApiResult = await ingestNewsFromNewsApi({
+        from: options.from,
+        to: options.to,
+      });
       results.push(
         `newsapi(fetched=${newsApiResult.fetched}, normalized=${newsApiResult.normalized}, stored=${newsApiResult.stored})`,
       );
@@ -22,7 +33,9 @@ export async function runNewsIngestionJob(): Promise<void> {
   }
 
   try {
-    const gdeltResult = await ingestNewsFromGdelt();
+    const gdeltResult = await ingestNewsFromGdelt({
+      gdeltTimespan: options.gdeltTimespan,
+    });
     results.push(
       `gdelt(fetched=${gdeltResult.fetched}, normalized=${gdeltResult.normalized}, stored=${gdeltResult.stored})`,
     );

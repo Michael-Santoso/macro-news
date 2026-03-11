@@ -5,12 +5,18 @@ const GDELT_DOC_API_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
 const GDELT_QUERY =
   '("inflation" OR economy OR "interest rates" OR "central bank" OR markets OR sanctions OR "oil prices")';
 
-export async function fetchFinancialNewsFromGdelt(): Promise<RssArticle[]> {
+type FetchFinancialNewsFromGdeltOptions = {
+  timespan?: string;
+};
+
+export async function fetchFinancialNewsFromGdelt(
+  options: FetchFinancialNewsFromGdeltOptions = {},
+): Promise<RssArticle[]> {
   const params = new URLSearchParams({
     query: GDELT_QUERY,
     mode: "artlist",
-    maxrecords: "50",
-    timespan: "24h",
+    maxrecords: "250",
+    timespan: options.timespan ?? "24h",
     sort: "datedesc",
     format: "rssarchive",
   });

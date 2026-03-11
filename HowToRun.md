@@ -21,6 +21,7 @@ cd backend
 npm install
 cp .env.example .env
 npx prisma migrate dev
+npm run bootstrap:dashboard
 npm run dev
 ```
 
@@ -32,6 +33,8 @@ Backend runs at:
 ```bash
 http://localhost:3000
 ```
+
+`npm run bootstrap:dashboard` backfills roughly the last 30 days of supported source data, processes it into dashboard theme events, and refreshes theme scores before the scheduler starts. Run it again any time you want to prefill the database manually.
 
 # (Optional) Database UI
 
@@ -60,4 +63,18 @@ Then run:
 ```bash
 cd backend
 npm run ingest:newsapi
+```
+
+If you want the frontend to look populated right away, prefer:
+
+```bash
+cd backend
+npm run bootstrap:dashboard
+```
+
+You can change the backfill window:
+
+```bash
+cd backend
+npm run bootstrap:dashboard -- --days=30
 ```

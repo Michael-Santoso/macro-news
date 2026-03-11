@@ -38,16 +38,20 @@ npm run prisma:migrate
 Start the development server:
 
 ```bash
+npm run bootstrap:dashboard
 npm run dev
 ```
 
 The server will run on `http://localhost:3000`
+
+Run `npm run bootstrap:dashboard` before `npm run dev` when you want to prefill the database with dashboard-facing content instead of waiting for the scheduler's first ingestion cycle. The bootstrap script backfills the last 30 days by default and accepts `-- --days=30` to change the window.
 
 ## Available Scripts
 
 - `npm run dev` - Start development server with hot reload
 - `npm run build` - Build for production
 - `npm start` - Start production server
+- `npm run bootstrap:dashboard` - One-shot fetch/process/score bootstrap for dashboard data
 - `npm run prisma:generate` - Generate Prisma client
 - `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:studio` - Open Prisma Studio

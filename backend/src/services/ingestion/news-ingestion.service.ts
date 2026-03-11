@@ -11,12 +11,37 @@ import {
 } from "./rss.client";
 import { storeRawArticles } from "./raw-article.repository";
 
+type NewsIngestionOptions = {
+  from?: Date;
+  to?: Date;
+  gdeltTimespan?: string;
+  maxPages?: number;
+};
+
 export async function ingestNewsFromNewsApi(): Promise<{
   fetched: number;
   normalized: number;
   stored: number;
+}>;
+export async function ingestNewsFromNewsApi(
+  options: NewsIngestionOptions,
+): Promise<{
+  fetched: number;
+  normalized: number;
+  stored: number;
+}>;
+export async function ingestNewsFromNewsApi(
+  options: NewsIngestionOptions = {},
+): Promise<{
+  fetched: number;
+  normalized: number;
+  stored: number;
 }> {
-  const fetchedArticles = await fetchFinancialNewsFromNewsApi();
+  const fetchedArticles = await fetchFinancialNewsFromNewsApi({
+    from: options.from,
+    to: options.to,
+    maxPages: options.maxPages,
+  });
   const normalizedArticles = normalizeNewsApiArticles(fetchedArticles);
   const storedCount = await storeRawArticles(normalizedArticles);
 
@@ -31,8 +56,24 @@ export async function ingestNewsFromGdelt(): Promise<{
   fetched: number;
   normalized: number;
   stored: number;
+}>;
+export async function ingestNewsFromGdelt(
+  options: NewsIngestionOptions,
+): Promise<{
+  fetched: number;
+  normalized: number;
+  stored: number;
+}>;
+export async function ingestNewsFromGdelt(
+  options: NewsIngestionOptions = {},
+): Promise<{
+  fetched: number;
+  normalized: number;
+  stored: number;
 }> {
-  const fetchedArticles = await fetchFinancialNewsFromGdelt();
+  const fetchedArticles = await fetchFinancialNewsFromGdelt({
+    timespan: options.gdeltTimespan,
+  });
   const normalizedArticles = normalizeRssArticles(fetchedArticles);
   const storedCount = await storeRawArticles(normalizedArticles);
 
