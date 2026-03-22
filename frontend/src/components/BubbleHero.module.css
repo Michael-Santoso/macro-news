@@ -69,6 +69,26 @@
   line-height: 1.45;
 }
 
+.statusRail {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.statusChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(8, 15, 29, 0.66);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
 .legend {
   display: flex;
   gap: 8px;

@@ -1,6 +1,7 @@
 import type {
   MacroRelease,
   MacroThemeKey,
+  ThemeEvent,
   ThemeEventSourceType,
   ThemeFilters,
   ThemeHeatLevel,
@@ -33,6 +34,8 @@ export const DEFAULT_FILTERS: ThemeFilters = {
   search: "",
   heatLevel: "ALL",
 };
+
+export type EvidenceTypeFilter = "ALL" | "NEWS_ONLY" | "OFFICIAL_ONLY";
 
 export const THEME_LABELS: Record<MacroThemeKey, string> = {
   inflation: "Inflation",
@@ -101,6 +104,103 @@ export function formatSourceType(sourceType: ThemeEventSourceType): string {
     .split("_")
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
+}
+
+const NAVIGABLE_PROTOCOLS = new Set(["http:", "https:"]);
+
+const SOURCE_HOST_LABELS: Array<[RegExp, string]> = [
+  [/(^|\.)reuters\.com$/i, "Reuters"],
+  [/(^|\.)cnbc\.com$/i, "CNBC"],
+  [/(^|\.)bloomberg\.com$/i, "Bloomberg"],
+  [/(^|\.)apnews\.com$/i, "Associated Press"],
+  [/(^|\.)businessinsider\.com$/i, "Business Insider"],
+  [/(^|\.)nbcnews\.com$/i, "NBC News"],
+  [/(^|\.)npr\.org$/i, "NPR"],
+  [/(^|\.)fortune\.com$/i, "Fortune"],
+  [/(^|\.)usatoday\.com$/i, "USA Today"],
+  [/(^|\.)aljazeera\.com$/i, "Al Jazeera"],
+  [/(^|\.)sec\.gov$/i, "SEC"],
+  [/(^|\.)federalreserve\.gov$/i, "Federal Reserve"],
+  [/(^|\.)ecb\.europa\.eu$/i, "European Central Bank"],
+  [/(^|\.)bankofengland\.co\.uk$/i, "Bank of England"],
+  [/(^|\.)boj\.or\.jp$/i, "Bank of Japan"],
+  [/(^|\.)pbc\.gov\.cn$/i, "People's Bank of China"],
+  [/(^|\.)bis\.org$/i, "BIS"],
+  [/(^|\.)federalregister\.gov$/i, "Federal Register"],
+  [/(^|\.)wto\.org$/i, "WTO"],
+];
+
+function inferHostLabel(hostname: string): string {
+  const normalizedHost = hostname.replace(/^www\./i, "");
+  const match = SOURCE_HOST_LABELS.find(([pattern]) => pattern.test(normalizedHost));
+
+  if (match) {
+    return match[1];
+  }
+
+  const parts = normalizedHost.split(".");
+  if (parts.length >= 2) {
+    return parts[0].replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  return normalizedHost || "Source";
+}
+
+export function getEventSourceLabel(event: Pick<ThemeEvent, "sourceType" | "sourceUrl">): string {
+  if (event.sourceUrl) {
+    try {
+      const url = new URL(event.sourceUrl);
+      return inferHostLabel(url.hostname);
+    } catch {
+      return formatSourceType(event.sourceType);
+    }
+  }
+
+  return formatSourceType(event.sourceType);
+}
+
+export function isOfficialEventSourceType(sourceType: ThemeEventSourceType): boolean {
+  return (
+    sourceType === "OFFICIAL_ANNOUNCEMENT" ||
+    sourceType === "REGULATORY_ANNOUNCEMENT"
+  );
+}
+
+export function isNewsEventSourceType(sourceType: ThemeEventSourceType): boolean {
+  return sourceType === "RAW_ARTICLE";
+}
+
+export function isValidNavigableUrl(sourceUrl: string | null | undefined): sourceUrl is string {
+  if (typeof sourceUrl !== "string") {
+    return false;
+  }
+
+  const trimmedSourceUrl = sourceUrl.trim();
+  if (trimmedSourceUrl.length === 0) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(trimmedSourceUrl);
+    return NAVIGABLE_PROTOCOLS.has(parsedUrl.protocol) && parsedUrl.hostname.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function matchesEvidenceTypeFilter(
+  event: Pick<ThemeEvent, "sourceType">,
+  filter: EvidenceTypeFilter,
+): boolean {
+  if (filter === "NEWS_ONLY") {
+    return isNewsEventSourceType(event.sourceType);
+  }
+
+  if (filter === "OFFICIAL_ONLY") {
+    return isOfficialEventSourceType(event.sourceType);
+  }
+
+  return true;
 }
 
 export function formatReleaseValue(release: MacroRelease): string {

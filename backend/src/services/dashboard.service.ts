@@ -86,6 +86,18 @@ function normalizeRegion(region?: string): string {
   return region?.trim() || "GLOBAL";
 }
 
+function buildTimelineRegionWhere(region?: string): Prisma.ThemeEventWhereInput {
+  const normalizedRegion = region?.trim();
+
+  if (!normalizedRegion || normalizedRegion === "GLOBAL") {
+    return {};
+  }
+
+  return {
+    OR: [{ region: normalizedRegion }, { region: null }],
+  };
+}
+
 async function loadThemeScores(region?: string): Promise<ThemeAggregate[]> {
   const resolvedRegion = normalizeRegion(region);
   const scores = await prisma.themeScore.findMany({
@@ -192,7 +204,7 @@ async function loadHeatTrend(theme: MacroTheme, region?: string) {
   const events = await prisma.themeEvent.findMany({
     where: {
       theme,
-      ...(region ? { region } : {}),
+      ...buildTimelineRegionWhere(region),
       publishedAt: { gte: since },
     },
     select: {

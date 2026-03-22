@@ -3,23 +3,47 @@
 import {
   formatCompactNumber,
   formatDate,
-  formatSourceType,
   formatTrendDelta,
+  getEventSourceLabel,
   getHeatLevelLabel,
   getThemeLabel,
+  isOfficialEventSourceType,
+  isNewsEventSourceType,
+  isValidNavigableUrl,
 } from "@/src/lib/dashboard";
-import type { ThemeDetailResponse } from "@/src/types/dashboard";
+import type { ThemeDetailResponse, ThemeEvent } from "@/src/types/dashboard";
 
 type ThemeDetailPanelProps = {
   detail: ThemeDetailResponse | null;
+  leadEvidenceEvent?: ThemeEvent | null;
+  linkedEvidenceCount?: number;
+  selectedRegionLabel?: string;
   isLoading?: boolean;
 };
 
+function getLeadEventTypeLabel(event: ThemeEvent): "Official" | "News" | "Other" {
+  if (isNewsEventSourceType(event.sourceType)) {
+    return "News";
+  }
+
+  if (isOfficialEventSourceType(event.sourceType)) {
+    return "Official";
+  }
+
+  return "Other";
+}
+
 export function ThemeDetailPanel({
   detail,
+  leadEvidenceEvent = null,
+  linkedEvidenceCount = 0,
+  selectedRegionLabel,
   isLoading = false,
 }: ThemeDetailPanelProps) {
-  const leadEvent = detail?.timeline.data[0] ?? null;
+  const leadEvent =
+    leadEvidenceEvent ??
+    detail?.timeline.data.find((event) => isValidNavigableUrl(event.sourceUrl)) ??
+    null;
   const recentTrend = detail?.heatTrend.slice(-7) ?? [];
   const trendMentions = recentTrend.reduce((sum, point) => sum + point.mentions, 0);
   const trendDelta =
@@ -80,7 +104,15 @@ export function ThemeDetailPanel({
                 Heat uses weekly mentions plus momentum
               </span>
               <span className="detailMetaChip">Scored from {detail.theme.scoringSource}</span>
-              <span className="detailMetaChip">{detail.timeline.pagination.total} linked events</span>
+              <span className="detailMetaChip">
+                {detail.timeline.pagination.total} theme events
+              </span>
+              <span className="detailMetaChip">
+                {linkedEvidenceCount} linked evidence items
+              </span>
+              {selectedRegionLabel ? (
+                <span className="detailMetaChip">Evidence view {selectedRegionLabel}</span>
+              ) : null}
               <span className="detailMetaChip">Updated {formatDate(detail.theme.updatedAt)}</span>
             </div>
           </div>
@@ -145,8 +177,23 @@ export function ThemeDetailPanel({
 
             {leadEvent ? (
               <article className="evidenceCallout">
+                {(() => {
+                  const typeLabel = getLeadEventTypeLabel(leadEvent);
+
+                  return (
                 <div className="evidenceMetaRow">
-                  <span className="detailMetaChip">{formatSourceType(leadEvent.sourceType)}</span>
+                  <span className="detailMetaChip">{getEventSourceLabel(leadEvent)}</span>
+                  <span
+                    className={`typeBadge ${
+                      typeLabel === "Official"
+                        ? "typeBadgeOfficial"
+                        : typeLabel === "News"
+                          ? "typeBadgeNews"
+                          : "typeBadgeOther"
+                    }`}
+                  >
+                    {typeLabel}
+                  </span>
                   {leadEvent.assetClass ? (
                     <span className="detailMetaChip">{leadEvent.assetClass}</span>
                   ) : null}
@@ -155,17 +202,21 @@ export function ThemeDetailPanel({
                   </span>
                   <span className="detailMetaChip">{formatDate(leadEvent.publishedAt)}</span>
                 </div>
+                  );
+                })()}
                 <h4>{leadEvent.title}</h4>
                 <p>{leadEvent.summary}</p>
                 <p className="riskCallout">{leadEvent.riskImplication}</p>
-                {leadEvent.sourceUrl ? (
+                {isValidNavigableUrl(leadEvent.sourceUrl) ? (
                   <a href={leadEvent.sourceUrl} target="_blank" rel="noreferrer">
                     Open source
                   </a>
                 ) : null}
               </article>
             ) : (
-              <p className="emptyState">No event evidence is attached to this theme yet.</p>
+              <p className="emptyState">
+                No linked evidence is available for this theme in the current view.
+              </p>
             )}
           </div>
         </div>

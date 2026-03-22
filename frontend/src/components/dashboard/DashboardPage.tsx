@@ -11,8 +11,10 @@ import {
 } from "@/src/lib/api";
 import {
   DEFAULT_FILTERS,
+  type EvidenceTypeFilter,
   filterThemes,
   formatDate,
+  isValidNavigableUrl,
   REGION_OPTIONS,
   getThemeLabel,
 } from "@/src/lib/dashboard";
@@ -30,8 +32,8 @@ import { MacroReleasesPanel } from "./MacroReleasesPanel";
 import { ThemeDetailPanel } from "./ThemeDetailPanel";
 
 const TIMELINE_DISPLAY_LIMIT = 8;
-const TIMELINE_FETCH_LIMIT = 24;
-const MIN_TIMELINE_NEWS_ITEMS = 3;
+const EVIDENCE_FETCH_LIMIT = 100;
+const EVIDENCE_PAGE_SIZE = 5;
 
 function toBubbleTheme(theme: ThemeSummary): BubbleTheme {
   return {
@@ -47,31 +49,6 @@ function toBubbleTheme(theme: ThemeSummary): BubbleTheme {
   };
 }
 
-function buildTimelineEvents(events: ThemeEvent[]): ThemeEvent[] {
-  if (events.length <= TIMELINE_DISPLAY_LIMIT) {
-    return events;
-  }
-
-  const newsEvents = events.filter((event) => event.sourceType === "RAW_ARTICLE");
-  const reservedNews = newsEvents.slice(0, MIN_TIMELINE_NEWS_ITEMS);
-  const selectedIds = new Set(reservedNews.map((event) => event.id));
-  const remainingSlots = Math.max(
-    TIMELINE_DISPLAY_LIMIT - reservedNews.length,
-    0,
-  );
-
-  const remainingEvents = events.filter((event) => !selectedIds.has(event.id));
-  const mixedEvents = [...reservedNews, ...remainingEvents.slice(0, remainingSlots)];
-
-  return mixedEvents
-    .sort(
-      (left, right) =>
-        new Date(right.publishedAt).getTime() -
-        new Date(left.publishedAt).getTime(),
-    )
-    .slice(0, TIMELINE_DISPLAY_LIMIT);
-}
-
 export function DashboardPage() {
   const [filters, setFilters] = useState<ThemeFilters>(DEFAULT_FILTERS);
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
@@ -81,11 +58,15 @@ export function DashboardPage() {
   const [themeDetail, setThemeDetail] = useState<ThemeDetailResponse | null>(
     null,
   );
-  const [events, setEvents] = useState<ThemeEvent[]>([]);
+  const [themeEvents, setThemeEvents] = useState<ThemeEvent[]>([]);
+  const [evidencePage, setEvidencePage] = useState(1);
+  const [evidenceTypeFilter, setEvidenceTypeFilter] =
+    useState<EvidenceTypeFilter>("ALL");
   const [releases, setReleases] = useState<MacroRelease[]>([]);
   const [pageError, setPageError] = useState<string | null>(null);
   const [themesLoading, setThemesLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [feedLoading, setFeedLoading] = useState(true);
   const [releasesLoading, setReleasesLoading] = useState(true);
 
   useEffect(() => {
@@ -139,7 +120,7 @@ export function DashboardPage() {
     if (visibleThemes.length === 0) {
       setSelectedTheme(null);
       setThemeDetail(null);
-      setEvents([]);
+      setThemeEvents([]);
       return;
     }
 
@@ -152,37 +133,30 @@ export function DashboardPage() {
   }, [selectedTheme, visibleThemes]);
 
   useEffect(() => {
+    setEvidencePage(1);
+  }, [evidenceTypeFilter, filters.region, selectedTheme]);
+
+  useEffect(() => {
     if (selectedTheme == null) {
       return;
     }
 
     const activeTheme = selectedTheme;
-
     const controller = new AbortController();
 
     async function loadSelectedThemeData() {
       setDetailLoading(true);
 
       try {
-        const [detailResponse, eventsResponse] = await Promise.all([
-          getThemeDetails({
-            theme: activeTheme,
-            region: filters.region,
-            limit: TIMELINE_DISPLAY_LIMIT,
-            sort: "newest",
-            signal: controller.signal,
-          }),
-          getEvents({
-            theme: activeTheme,
-            region: filters.region,
-            limit: TIMELINE_FETCH_LIMIT,
-            sort: "newest",
-            signal: controller.signal,
-          }),
-        ]);
+        const detailResponse = await getThemeDetails({
+          theme: activeTheme,
+          region: filters.region,
+          limit: TIMELINE_DISPLAY_LIMIT,
+          sort: "newest",
+          signal: controller.signal,
+        });
 
         setThemeDetail(detailResponse);
-        setEvents(buildTimelineEvents(eventsResponse.data));
       } catch (error) {
         if ((error as Error).name === "AbortError") {
           return;
@@ -199,11 +173,76 @@ export function DashboardPage() {
     return () => controller.abort();
   }, [filters.region, selectedTheme]);
 
+  useEffect(() => {
+    if (selectedTheme == null) {
+      return;
+    }
+
+    const activeTheme = selectedTheme;
+    const controller = new AbortController();
+
+    async function loadThemeEvidence() {
+      setFeedLoading(true);
+      setThemeEvents([]);
+
+      try {
+        const allEvents: ThemeEvent[] = [];
+        let nextPage = 1;
+        let totalPages = 1;
+
+        while (nextPage <= totalPages) {
+          const eventsResponse = await getEvents({
+            theme: activeTheme,
+            region: filters.region,
+            page: nextPage,
+            limit: EVIDENCE_FETCH_LIMIT,
+            sort: "newest",
+            signal: controller.signal,
+          });
+
+          allEvents.push(...eventsResponse.data);
+          totalPages = eventsResponse.pagination.totalPages;
+          nextPage += 1;
+        }
+
+        setThemeEvents(allEvents);
+      } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          return;
+        }
+
+        setPageError((error as Error).message);
+      } finally {
+        setFeedLoading(false);
+      }
+    }
+
+    void loadThemeEvidence();
+
+    return () => controller.abort();
+  }, [filters.region, selectedTheme]);
+
   const bubbleThemes = visibleThemes.map(toBubbleTheme);
   const hotThemes = visibleThemes.filter((theme) => theme.heatLevel === "HOT").length;
+  const stableThemes = visibleThemes.filter((theme) => theme.heatLevel === "STABLE").length;
+  const coolingThemes = visibleThemes.filter((theme) => theme.heatLevel === "COOLING").length;
   const selectedRegionLabel =
     REGION_OPTIONS.find((region) => region.value === filters.region)?.label ??
     filters.region;
+  const linkedEvidenceEvents = useMemo(
+    () =>
+      [...themeEvents]
+        .filter(
+          (event): event is ThemeEvent & { sourceUrl: string } =>
+            isValidNavigableUrl(event.sourceUrl),
+        )
+        .sort(
+          (left, right) =>
+            new Date(right.publishedAt).getTime() -
+            new Date(left.publishedAt).getTime(),
+        ),
+    [themeEvents],
+  );
 
   return (
     <main className="dashboardShell">
@@ -213,6 +252,8 @@ export function DashboardPage() {
         stats={{
           visibleThemes: visibleThemes.length,
           hotThemes,
+          stableThemes,
+          coolingThemes,
           selectedRegionLabel,
         }}
       />
@@ -248,6 +289,7 @@ export function DashboardPage() {
         <div className="dashboardGridHero">
           <BubbleHero
             themes={bubbleThemes}
+            selectedRegionLabel={selectedRegionLabel}
             selectedThemeId={selectedTheme}
             onSelectTheme={(theme) =>
               setSelectedTheme(theme.id as MacroThemeKey)
@@ -255,16 +297,27 @@ export function DashboardPage() {
           />
 
           <div className="dashboardGridDetail">
-            <ThemeDetailPanel detail={themeDetail} isLoading={detailLoading} />
+            <ThemeDetailPanel
+              detail={themeDetail}
+              leadEvidenceEvent={linkedEvidenceEvents[0] ?? null}
+              linkedEvidenceCount={linkedEvidenceEvents.length}
+              selectedRegionLabel={selectedRegionLabel}
+              isLoading={detailLoading}
+            />
           </div>
         </div>
       </section>
 
       <section className="dashboardLower">
         <EventsTimeline
-          events={events}
+          events={themeEvents}
+          currentPage={evidencePage}
+          pageSize={EVIDENCE_PAGE_SIZE}
+          typeFilter={evidenceTypeFilter}
+          onTypeFilterChange={setEvidenceTypeFilter}
+          onPageChange={setEvidencePage}
+          isLoading={feedLoading}
           selectedTheme={selectedTheme}
-          isLoading={detailLoading}
         />
       </section>
 

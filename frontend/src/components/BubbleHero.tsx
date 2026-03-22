@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import {
+  formatCompactNumber,
+  getHeatLevelLabel,
+} from "../lib/dashboard";
 import styles from "./BubbleHero.module.css";
 import type { MacroTheme, ThemeHeatLevel } from "../types/macro";
 
 interface BubbleHeroProps {
   themes: MacroTheme[];
+  selectedRegionLabel?: string;
   selectedThemeId?: string | null;
   onSelectTheme?: (theme: MacroTheme) => void;
   className?: string;
@@ -18,25 +23,22 @@ interface BubbleLayout {
 
 const HEAT_STYLES: Record<
   ThemeHeatLevel,
-  { fill: string; glow: string; edge: string; label: string }
+  { fill: string; glow: string; edge: string }
 > = {
   HOT: {
     fill: "linear-gradient(145deg, #f59e0b 0%, #ea580c 48%, #dc2626 100%)",
     glow: "rgba(234, 88, 12, 0.22)",
     edge: "rgba(251, 191, 36, 0.22)",
-    label: "Heating Up",
   },
   STABLE: {
-    fill: "linear-gradient(145deg, #60a5fa 0%, #3b82f6 40%, #334155 100%)",
-    glow: "rgba(59, 130, 246, 0.18)",
-    edge: "rgba(148, 163, 184, 0.2)",
-    label: "Stable",
+    fill: "linear-gradient(145deg, #94a3b8 0%, #64748b 46%, #334155 100%)",
+    glow: "rgba(100, 116, 139, 0.2)",
+    edge: "rgba(148, 163, 184, 0.22)",
   },
   COOLING: {
-    fill: "linear-gradient(145deg, #2dd4bf 0%, #0f766e 52%, #115e59 100%)",
-    glow: "rgba(20, 184, 166, 0.18)",
-    edge: "rgba(45, 212, 191, 0.18)",
-    label: "Cooling",
+    fill: "linear-gradient(145deg, #34d399 0%, #0f766e 52%, #14532d 100%)",
+    glow: "rgba(16, 185, 129, 0.2)",
+    edge: "rgba(52, 211, 153, 0.2)",
   },
 };
 
@@ -157,6 +159,7 @@ function getStrongestEdges(themes: MacroTheme[]) {
 
 export function BubbleHero({
   themes,
+  selectedRegionLabel,
   selectedThemeId,
   onSelectTheme,
   className,
@@ -187,6 +190,11 @@ export function BubbleHero({
       : sortedThemes[0] ?? null;
   const previewTheme = hoveredTheme ?? selectedTheme;
   const edges = getStrongestEdges(sortedThemes);
+  const heatCounts = {
+    HOT: sortedThemes.filter((theme) => theme.heatLevel === "HOT").length,
+    STABLE: sortedThemes.filter((theme) => theme.heatLevel === "STABLE").length,
+    COOLING: sortedThemes.filter((theme) => theme.heatLevel === "COOLING").length,
+  };
   const positions = Object.fromEntries(
     sortedThemes.map((theme, index) => [
       theme.id,
@@ -201,8 +209,20 @@ export function BubbleHero({
           <p className={styles.eyebrow}>Macro Discovery</p>
           <h1 className={styles.title}>Theme Heatmap</h1>
           <p className={styles.subtitle}>
-            Bubble size tracks weekly volume. Color tracks week-over-week direction.
+            Bubble size tracks weekly mentions. Color reflects the current heat state
+            {selectedRegionLabel ? ` for ${selectedRegionLabel}` : ""}.
           </p>
+          <div className={styles.statusRail} aria-label="Heat state distribution">
+            {(["HOT", "STABLE", "COOLING"] as const).map((heatLevel) => (
+              <span key={heatLevel} className={styles.statusChip}>
+                <span
+                  className={styles.legendSwatch}
+                  style={{ background: HEAT_STYLES[heatLevel].fill }}
+                />
+                {getHeatLevelLabel(heatLevel)} {heatCounts[heatLevel]}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div className={styles.headerRail}>
@@ -213,7 +233,7 @@ export function BubbleHero({
                   className={styles.legendSwatch}
                   style={{ background: HEAT_STYLES[heatLevel].fill }}
                 />
-                {HEAT_STYLES[heatLevel].label}
+                {getHeatLevelLabel(heatLevel)}
               </span>
             ))}
           </div>
@@ -230,11 +250,11 @@ export function BubbleHero({
                 </p>
                 <div className={styles.hoverCardStats}>
                   <span className={styles.metaPill}>
-                    {HEAT_STYLES[previewTheme.heatLevel].label}
+                    {getHeatLevelLabel(previewTheme.heatLevel)}
                   </span>
                   {previewTheme.weeklyMentions != null ? (
                     <span className={styles.metaPill}>
-                      {previewTheme.weeklyMentions} weekly mentions
+                      {formatCompactNumber(previewTheme.weeklyMentions)} weekly mentions
                     </span>
                   ) : null}
                   {previewTheme.momentumScore != null ? (

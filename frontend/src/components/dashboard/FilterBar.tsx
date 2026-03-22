@@ -13,6 +13,8 @@ type FilterBarProps = {
   stats: {
     visibleThemes: number;
     hotThemes: number;
+    stableThemes: number;
+    coolingThemes: number;
     selectedRegionLabel: string;
   };
 };
@@ -30,12 +32,20 @@ export function FilterBar({ filters, onChange, stats }: FilterBarProps) {
         <div className="filterBarTopRail">
           <div className="filterBarHighlights" aria-label="Dashboard snapshot">
             <div className="highlightChip">
-              <span>Visible themes</span>
-              <strong>{stats.visibleThemes}</strong>
-            </div>
-            <div className="highlightChip">
               <span>Heating up</span>
               <strong>{stats.hotThemes}</strong>
+            </div>
+            <div className="highlightChip">
+              <span>Stable</span>
+              <strong>{stats.stableThemes}</strong>
+            </div>
+            <div className="highlightChip">
+              <span>Cooling</span>
+              <strong>{stats.coolingThemes}</strong>
+            </div>
+            <div className="highlightChip">
+              <span>Visible themes</span>
+              <strong>{stats.visibleThemes}</strong>
             </div>
             <div className="highlightChip">
               <span>Region</span>
@@ -105,7 +115,7 @@ export function FilterBar({ filters, onChange, stats }: FilterBarProps) {
           </label>
 
           <label className="field fieldCompact">
-            <span></span>
+            <span>Heat state</span>
             <select
               value={filters.heatLevel}
               onChange={(event) =>

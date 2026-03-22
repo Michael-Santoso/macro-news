@@ -1,39 +1,110 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import {
+  type EvidenceTypeFilter,
   formatDate,
-  formatSourceType,
+  getEventSourceLabel,
   getThemeLabel,
+  isOfficialEventSourceType,
+  isNewsEventSourceType,
+  isValidNavigableUrl,
+  matchesEvidenceTypeFilter,
 } from "@/src/lib/dashboard";
-import type { MacroThemeKey, ThemeEvent } from "@/src/types/dashboard";
+import type {
+  MacroThemeKey,
+  ThemeEvent,
+} from "@/src/types/dashboard";
 
 type EventsTimelineProps = {
   events: ThemeEvent[];
-  selectedTheme: MacroThemeKey | null;
+  currentPage: number;
+  pageSize: number;
+  typeFilter: EvidenceTypeFilter;
   isLoading?: boolean;
+  onTypeFilterChange: (filter: EvidenceTypeFilter) => void;
+  onPageChange: (page: number) => void;
+  selectedTheme: MacroThemeKey | null;
 };
+
+const EVIDENCE_TYPE_OPTIONS: Array<{
+  value: EvidenceTypeFilter;
+  label: string;
+}> = [
+  { value: "ALL", label: "All" },
+  { value: "NEWS_ONLY", label: "News only" },
+  { value: "OFFICIAL_ONLY", label: "Official only" },
+];
+
+function getEventTypeLabel(event: ThemeEvent): "Official" | "News" | "Other" {
+  if (isNewsEventSourceType(event.sourceType)) {
+    return "News";
+  }
+
+  if (isOfficialEventSourceType(event.sourceType)) {
+    return "Official";
+  }
+
+  return "Other";
+}
 
 export function EventsTimeline({
   events,
-  selectedTheme,
+  currentPage,
+  pageSize,
+  typeFilter,
   isLoading = false,
+  onTypeFilterChange,
+  onPageChange,
+  selectedTheme,
 }: EventsTimelineProps) {
-  const leadEvent = events[0] ?? null;
-  const averageImpact =
-    events.length > 0
-      ? events.reduce((sum, event) => sum + event.impactScore, 0) / events.length
-      : 0;
+  const filteredEvents = useMemo(
+    () =>
+      events
+        .filter((event) => selectedTheme == null || event.theme === selectedTheme)
+        .filter(
+          (event): event is ThemeEvent & { sourceUrl: string } =>
+            isValidNavigableUrl(event.sourceUrl),
+        )
+        .filter((event) => matchesEvidenceTypeFilter(event, typeFilter))
+        .sort(
+          (left, right) =>
+            new Date(right.publishedAt).getTime() -
+            new Date(left.publishedAt).getTime(),
+        ),
+    [events, selectedTheme, typeFilter],
+  );
+
+  const totalCount = filteredEvents.length;
+  const officialCount = filteredEvents.filter((event) =>
+    isOfficialEventSourceType(event.sourceType),
+  ).length;
+  const newsCount = filteredEvents.filter((event) =>
+    isNewsEventSourceType(event.sourceType),
+  ).length;
+  const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize);
+  const safePage =
+    totalPages === 0 ? 1 : Math.min(Math.max(currentPage, 1), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const timelineEvents = filteredEvents.slice(startIndex, startIndex + pageSize);
+
+  useEffect(() => {
+    if (safePage !== currentPage) {
+      onPageChange(safePage);
+    }
+  }, [currentPage, onPageChange, safePage]);
 
   return (
     <section className="panel">
       <div className="panelHeader">
         <div>
           <p className="eyebrow">Evidence</p>
-          <h2>Event timeline</h2>
+          <h2>Mixed event timeline</h2>
         </div>
         <p className="subtle">
-          Latest linked signals for{" "}
-          {selectedTheme ? getThemeLabel(selectedTheme) : "the current selection"}.
+          {selectedTheme
+            ? `Relevant evidence for ${getThemeLabel(selectedTheme)}.`
+            : "Latest official and news signals in one chronological feed."}
         </p>
       </div>
 
@@ -43,91 +114,103 @@ export function EventsTimeline({
           <div className="skeletonLine" />
           <div className="skeletonLine" />
         </div>
-      ) : events.length > 0 ? (
+      ) : (
         <div className="timelinePanelBody">
+          <div className="timelineFilterBar" role="tablist" aria-label="Evidence type filter">
+            {EVIDENCE_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="tab"
+                aria-selected={typeFilter === option.value}
+                className={`timelineFilterChip${typeFilter === option.value ? " isActive" : ""}`}
+                onClick={() => onTypeFilterChange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
           <div className="timelineSummaryRow">
             <div className="timelineSummaryCard">
-              <span>Events loaded</span>
-              <strong>{events.length}</strong>
+              <span>Total</span>
+              <strong>{totalCount}</strong>
             </div>
             <div className="timelineSummaryCard">
-              <span>Lead source</span>
-              <strong>
-                {formatSourceType(leadEvent?.sourceType ?? "RAW_ARTICLE")}
-              </strong>
+              <span>Official</span>
+              <strong>{officialCount}</strong>
             </div>
             <div className="timelineSummaryCard">
-              <span>Avg impact</span>
-              <strong>{averageImpact.toFixed(0)}</strong>
+              <span>News</span>
+              <strong>{newsCount}</strong>
             </div>
           </div>
 
-          <div className="timelineScroller" aria-label="Scrollable event timeline">
-            <div className="timelineList">
-              {events.map((event) => (
-                <article key={event.id} className="timelineItem">
-                  <div className="timelineRail">
-                    <span className="timelineDot" />
+          <div className="eventList">
+            {totalCount > 0 ? timelineEvents.map((event) => {
+              const typeLabel = getEventTypeLabel(event);
+
+              return (
+                <article key={event.id} className="eventCard eventCard--evidence">
+                  <div className="eventCardMeta">
+                    <span className="publisherBadge">{getEventSourceLabel(event)}</span>
+                    <span
+                      className={`typeBadge ${
+                        typeLabel === "Official"
+                          ? "typeBadgeOfficial"
+                          : typeLabel === "News"
+                            ? "typeBadgeNews"
+                            : "typeBadgeOther"
+                      }`}
+                    >
+                      {typeLabel}
+                    </span>
+                    <time dateTime={event.publishedAt}>
+                      {formatDate(event.publishedAt)}
+                    </time>
                   </div>
-                  <div className="timelineContent">
-                    <div className="timelineTopRow">
-                      <time
-                        className="timelineDate"
-                        dateTime={event.publishedAt}
-                      >
-                        {formatDate(event.publishedAt)}
-                      </time>
-                      {event.sourceUrl ? (
-                        <a
-                          className="timelineSourceButton"
-                          href={event.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Open source for ${event.title}`}
-                        >
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 20 20"
-                            fill="none"
-                          >
-                            <path
-                              d="M8 4h8v8m0-8-9 9M5 8v7h7"
-                              stroke="currentColor"
-                              strokeWidth="1.7"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </a>
-                      ) : null}
-                    </div>
-                    <div className="timelineMetaRow">
-                      <span>{formatSourceType(event.sourceType)}</span>
-                      <span>{getThemeLabel(event.theme)}</span>
-                      {event.assetClass ? <span>{event.assetClass}</span> : null}
-                      <span className="impactPill">
-                        Impact {event.impactScore.toFixed(0)}
-                      </span>
-                    </div>
-                    <h3>{event.title}</h3>
-                    <p className="timelineRisk">
-                      <span>Risk</span>
-                      {event.riskImplication}
-                    </p>
-                  </div>
+                  <h3 className="eventCardTitle">
+                    <a href={event.sourceUrl} target="_blank" rel="noreferrer">
+                      {event.title}
+                    </a>
+                  </h3>
+                  <a className="timelineLink" href={event.sourceUrl} target="_blank" rel="noreferrer">
+                    Open source
+                  </a>
                 </article>
-              ))}
-            </div>
+              );
+            }) : (
+              <p className="emptyState">
+                No linked evidence matches the current filter for{" "}
+                {selectedTheme ? getThemeLabel(selectedTheme) : "the current theme"}.
+              </p>
+            )}
           </div>
+
+          {totalPages > 0 ? (
+            <div className="timelinePagination">
+              <button
+                type="button"
+                className="secondaryButton timelinePaginationButton"
+                onClick={() => onPageChange(Math.max(safePage - 1, 1))}
+                disabled={safePage <= 1}
+              >
+                Previous
+              </button>
+              <span className="timelinePaginationStatus">
+                Page {safePage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                className="secondaryButton timelinePaginationButton"
+                onClick={() => onPageChange(Math.min(safePage + 1, totalPages))}
+                disabled={safePage >= totalPages}
+              >
+                Next
+              </button>
+            </div>
+          ) : null}
         </div>
-      ) : (
-        <p className="emptyState">
-          No events available for{" "}
-          {selectedTheme
-            ? getThemeLabel(selectedTheme)
-            : "the current selection"}
-          .
-        </p>
       )}
     </section>
   );

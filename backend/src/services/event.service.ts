@@ -62,6 +62,7 @@ function clampPage(page?: number): number {
 
 function buildEventWhere(params: ListEventsParams): Prisma.ThemeEventWhereInput {
   const publishedAt: Prisma.DateTimeFilter = {};
+  const normalizedRegion = params.region?.trim();
 
   if (params.fromDate) {
     publishedAt.gte = params.fromDate;
@@ -73,7 +74,11 @@ function buildEventWhere(params: ListEventsParams): Prisma.ThemeEventWhereInput 
 
   return {
     ...(params.theme ? { theme: params.theme } : {}),
-    ...(params.region ? { region: params.region } : {}),
+    ...(normalizedRegion && normalizedRegion !== "GLOBAL"
+      ? {
+          OR: [{ region: normalizedRegion }, { region: null }],
+        }
+      : {}),
     ...(params.assetClass ? { assetClass: params.assetClass } : {}),
     ...(params.fromDate || params.toDate ? { publishedAt } : {}),
   };
